@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Explainer Studio</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Explainer Studio</p>
+      <h1>Script + scene images</h1>
+    </div>
+    <div class="status" id="status">Checking keys…</div>
+  </header>
+
+  <main>
+    <section class="panel form-panel">
+      <h2>New pack</h2>
+      <label>Topic
+        <input id="topic" placeholder="The entire story of the Odyssey" />
+      </label>
+      <div class="row">
+        <label>Style
+          <select id="style">
+            <option value="odyssey">Odyssey explainer</option>
+            <option value="dark_vault">Dark Vault investigation</option>
+          </select>
+        </label>
+        <label>Length
+          <select id="duration">
+            <option value="8">8 min</option>
+            <option value="12" selected>12 min</option>
+            <option value="15">15 min</option>
+          </select>
+        </label>
+      </div>
+      <label>Angle / hook idea
+        <textarea id="angle" rows="3" placeholder="The 10-year voyage happened because he shouted his name at the Cyclops."></textarea>
+      </label>
+      <label>Source notes (optional)
+        <textarea id="notes" rows="4" placeholder="Facts you want the script to keep. Unverified claims stay out."></textarea>
+      </label>
+      <div class="actions">
+        <button id="generate" class="primary">Generate script</button>
+        <button id="demo" class="ghost">Load Icarus demo</button>
+      </div>
+      <p class="hint" id="form-error"></p>
+      <h3>Recent</h3>
+      <ul id="recent" class="recent"></ul>
+    </section>
+
+    <section class="panel script-panel" id="workspace">
+      <div class="empty" id="empty">
+        Generate a pack, or open the Icarus demo to see the Odyssey-style format: hook, spoken scenes, image prompts.
+      </div>
+      <div id="pack" hidden>
+        <div class="pack-head">
+          <div>
+            <p class="eyebrow" id="pack-style"></p>
+            <h2 id="pack-title"></h2>
+            <p class="meta" id="pack-meta"></p>
+          </div>
+          <div class="actions">
+            <button id="make-images" class="primary">Generate 8 images</button>
+            <button id="export" class="ghost">Export zip</button>
+          </div>
+        </div>
+        <p class="hook" id="pack-hook"></p>
+        <p class="thesis" id="pack-thesis"></p>
+        <div class="tabs">
+          <button data-tab="scenes" class="active">Scenes</button>
+          <button data-tab="narration">Full narration</button>
+          <button data-tab="youtube">YouTube</button>
+        </div>
+        <div id="tab-scenes" class="tab-body">
+          <div id="scenes" class="scenes"></div>
+        </div>
+        <div id="tab-narration" class="tab-body" hidden>
+          <pre id="narration"></pre>
+        </div>
+        <div id="tab-youtube" class="tab-body" hidden>
+          <pre id="youtube"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
