@@ -95,11 +95,15 @@ def generate_free_image(prompt: str, dest: Path, seed: int = 0) -> Path:
     tier can stamp a small watermark in the bottom-right corner.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    url = POLLINATIONS_URL.format(prompt=quote(prompt[:1400]))
-    extra = 100
+    # Steer flux away from rendering a literal framed canvas on a wall.
+    steered = (
+        f"Full-bleed cinematic film frame: {prompt[:1200]} — edge-to-edge image, "
+        "no frame, no border, no canvas edge, no wall, no matting"
+    )
+    url = POLLINATIONS_URL.format(prompt=quote(steered))
     params = {
         "width": IMAGE_W,
-        "height": IMAGE_H + extra,
+        "height": IMAGE_H + 100,  # extra headroom; final size is enforced below
         "nologo": "true",
         "seed": seed,
         "model": "flux",
@@ -119,10 +123,53 @@ def generate_free_image(prompt: str, dest: Path, seed: int = 0) -> Path:
         img = Image.open(io.BytesIO(content)).convert("RGB")
     except Exception as exc:  # noqa: BLE001 - any decode failure means bad payload
         raise VisualError(f"Free image service returned invalid data: {exc}") from exc
-    if img.height > IMAGE_H:
-        img = img.crop((0, 0, img.width, img.height - extra))
+    img = _strip_borders(img)
+    # The free tier stamps a small watermark near the bottom-right regardless of
+    # nologo, so always drop the bottom strip of whatever was returned.
+    img = img.crop((0, 0, img.width, int(img.height * 0.92)))
+    img = img.resize((IMAGE_W, IMAGE_H), Image.LANCZOS)
     img.save(dest)
     return dest
+
+
+def _strip_borders(img: Image.Image, max_frac: float = 0.14) -> Image.Image:
+    """Remove uniform bands (wall/frame/matting artifacts) from left/right/top.
+
+    A band counts as border when its pixel values barely vary — real scene
+    content (sea, sky, stone) always carries texture at 1600px wide.
+    """
+    import statistics
+
+    gray = img.convert("L")
+    w, h = gray.size
+    px = gray.load()
+    step = max(1, h // 80)
+
+    def col_uniform(x: int) -> bool:
+        vals = [px[x, y] for y in range(0, h, step)]
+        return statistics.pstdev(vals) < 10.0
+
+    def row_uniform(y: int) -> bool:
+        vals = [px[x, y] for x in range(0, w, max(1, w // 80))]
+        return statistics.pstdev(vals) < 10.0
+
+    left = 0
+    while left < int(w * max_frac) and col_uniform(left):
+        left += 1
+    right = w
+    while right > w - int(w * max_frac) and col_uniform(right - 1):
+        right -= 1
+    top = 0
+    while top < int(h * max_frac) and row_uniform(top):
+        top += 1
+    if left or top or right < w:
+        # A few extra pixels hide the soft edge between band and content.
+        pad = 6
+        left = min(left + pad, w // 4) if left else 0
+        top = min(top + pad, h // 4) if top else 0
+        right = max(right - pad, w * 3 // 4) if right < w else w
+        img = img.crop((left, top, right, h))
+    return img
 
 
 def generate_thumbnail(prompt: str, dest: Path) -> Path:
