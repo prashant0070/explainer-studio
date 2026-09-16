@@ -4,6 +4,7 @@ __pycache__/
 .env
 data/projects/*
 !data/projects/.gitkeep
+data/music/
 .DS_Store
 
 node_modules/

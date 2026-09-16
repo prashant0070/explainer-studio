@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     image_model: str = "dall-e-3"
     image_timeout_seconds: float = 180.0
 
+    # Everything below is optional and free of charge.
+    tts_voice: str = ""  # override the per-style default edge-tts voice
+    pexels_api_key: str = ""  # free key -> real stock footage per scene
+    pixabay_api_key: str = ""  # free key -> stock footage fallback
+
     @property
     def projects_dir(self) -> Path:
         return self.data_dir / "projects"

@@ -10,14 +10,23 @@
   <header class="top">
     <div>
       <p class="eyebrow">Explainer Studio</p>
-      <h1>Script + scene images</h1>
+      <h1>Research → script → voiceover → finished video</h1>
     </div>
     <div class="status" id="status">Checking keys…</div>
   </header>
 
   <main>
     <section class="panel form-panel">
-      <h2>New pack</h2>
+      <h2>Find a topic</h2>
+      <label>Niche / channel description
+        <textarea id="niche" rows="2" placeholder="A channel about forgotten disasters and the one decision that caused them"></textarea>
+      </label>
+      <div class="actions">
+        <button id="ideas-btn" class="ghost">Research topic ideas</button>
+      </div>
+      <ul id="ideas" class="recent"></ul>
+
+      <h2>New production</h2>
       <label>Topic
         <input id="topic" placeholder="The entire story of the Odyssey" />
       </label>
@@ -37,11 +46,12 @@
         </label>
       </div>
       <label>Angle / hook idea
-        <textarea id="angle" rows="3" placeholder="The 10-year voyage happened because he shouted his name at the Cyclops."></textarea>
+        <textarea id="angle" rows="2" placeholder="The 10-year voyage happened because he shouted his name at the Cyclops."></textarea>
       </label>
       <label>Source notes (optional)
-        <textarea id="notes" rows="4" placeholder="Facts you want the script to keep. Unverified claims stay out."></textarea>
+        <textarea id="notes" rows="3" placeholder="Facts you want the script to keep. Auto-research adds Wikipedia-grounded facts."></textarea>
       </label>
+      <label class="check-label"><input type="checkbox" id="auto-research" checked /> Auto-research the topic (free, Wikipedia-grounded)</label>
       <div class="actions">
         <button id="generate" class="primary">Generate script</button>
         <button id="demo" class="ghost">Load Icarus demo</button>
@@ -53,7 +63,9 @@
 
     <section class="panel script-panel" id="workspace">
       <div class="empty" id="empty">
-        Generate a pack, or open the Icarus demo to see the Odyssey-style format: hook, spoken scenes, image prompts.
+        Describe your niche to research topics, or generate a pack directly.
+        Then hit <strong>Produce full video</strong>: free voiceover, free visuals,
+        word-timed captions, professional cuts, and an automated quality report.
       </div>
       <div id="pack" hidden>
         <div class="pack-head">
@@ -63,15 +75,36 @@
             <p class="meta" id="pack-meta"></p>
           </div>
           <div class="actions">
-            <button id="make-images" class="primary">Generate 8 images</button>
+            <button id="render-btn" class="primary">Produce full video</button>
+            <button id="make-images" class="ghost">Generate 8 images</button>
             <button id="export" class="ghost">Export zip</button>
           </div>
         </div>
+
+        <div class="render-controls">
+          <label>Voice
+            <select id="voice"></select>
+          </label>
+          <label class="check-label"><input type="checkbox" id="opt-captions" checked /> Captions</label>
+          <label class="check-label"><input type="checkbox" id="opt-music" checked /> Music (if a track exists in data/music)</label>
+        </div>
+
+        <div id="render-progress" class="render-progress" hidden>
+          <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+          <p class="meta" id="render-message"></p>
+        </div>
+
+        <div id="video-wrap" hidden>
+          <video id="player" controls preload="metadata"></video>
+          <div id="qc-report" class="qc"></div>
+        </div>
+
         <p class="hook" id="pack-hook"></p>
         <p class="thesis" id="pack-thesis"></p>
         <div class="tabs">
           <button data-tab="scenes" class="active">Scenes</button>
           <button data-tab="narration">Full narration</button>
+          <button data-tab="research">Research</button>
           <button data-tab="youtube">YouTube</button>
         </div>
         <div id="tab-scenes" class="tab-body">
@@ -79,6 +112,9 @@
         </div>
         <div id="tab-narration" class="tab-body" hidden>
           <pre id="narration"></pre>
+        </div>
+        <div id="tab-research" class="tab-body" hidden>
+          <pre id="research"></pre>
         </div>
         <div id="tab-youtube" class="tab-body" hidden>
           <pre id="youtube"></pre>
