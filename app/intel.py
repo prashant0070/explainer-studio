@@ -199,32 +199,234 @@ class IntelError(RuntimeError):
     pass
 
 
-def analyze_niche(niche: str, count: int = 10) -> Dict[str, Any]:
+SCIENCE_CHANNEL_PATTERNS = [
+    {
+        "channel": "Veritasium",
+        "pattern": "One counterintuitive cause. The man, the machine, or the measurement is the plot.",
+        "proof": "Clair Patterson / leaded gasoline and Thomas Midgley pieces are among the channel's stickiest long-form — millions of views on 'the inventor who accidentally did the most damage'.",
+        "takeaway": "Science clicks when it is a person making one bargain. Not 'how does X work'.",
+    },
+    {
+        "channel": "Mustard / Real Engineering",
+        "pattern": "One vehicle or machine, then the night it fails, painted with archival tension.",
+        "proof": "Mustard's failed prototypes and lost airliners routinely outperform generic 'how jet engines work' explainers on the same topics.",
+        "takeaway": "The Vasa, Challenger, Comet airliners, Therac-25 — the machine is the monster. Same cut rhythm as Icarus.",
+    },
+    {
+        "channel": "ColdFusion",
+        "pattern": "Rise and fall of a tech bet. One founder, one error, one winter.",
+        "proof": "Company-obituary videos (Theranos-adjacent, Nokia, Kodak) outperform feature roundups.",
+        "takeaway": "We do the same plot with a painted still every 8–18s instead of stock B-roll and a talking head.",
+    },
+    {
+        "channel": "Kurzgesagt",
+        "pattern": "Big question, cute 2D vectors, no single human cause.",
+        "proof": "Huge reach. Different art form. Their Fermi / black-hole / immune-system videos are lectures with charm, not tragedies with a hook.",
+        "takeaway": "Do not copy the blobs. Copy the appetite: science that feels like a myth. Keep OUR oil-paint cinematic look.",
+    },
+    {
+        "channel": "The Why Files / Dark Vault lane",
+        "pattern": "One incident, rising evidence, the uncomfortable counter-explanation.",
+        "proof": "Petrov, Wow! signal, Carrington, Demon Core — mystery-science hybrids that already convert on investigation channels.",
+        "takeaway": "Last three myth topics (Bronze Age collapse, Tambora→Frankenstein, dancing plague) already WERE science stories. This lane just says it out loud.",
+    },
+]
+
+SCIENCE_DEMAND = [
+    "Chernobyl_disaster",
+    "Space_Shuttle_Challenger_disaster",
+    "Thomas_Midgley_Jr.",
+    "Clair_Cameron_Patterson",
+    "Demon_core",
+    "Radium_Girls",
+    "Ignaz_Semmelweis",
+    "Stanislav_Petrov",
+    "Carrington_Event",
+    "Katalin_Karikó",
+    "Hubble_Space_Telescope",
+    "Transatlantic_telegraph_cable",
+    "Antikythera_mechanism",
+    "Voyager_program",
+    "Therac-25",
+    "Mars_Climate_Orbiter",
+    "Rosalind_Franklin",
+    "Henrietta_Lacks",
+    "John_Snow",
+    "Vasa_(ship)",
+]
+
+SCIENCE_TOPICS: List[Dict[str, Any]] = [
+    {
+        "rank": 1,
+        "topic": "Thomas Midgley Jr. — leaded gasoline and Freon",
+        "title": "One Chemist Poisoned the Air Twice",
+        "hook": "Thomas Midgley added lead to gasoline to stop engines knocking, then invented Freon to stop refrigerators killing people. Both worked. Both went global. He died in a machine of his own design, strangled by the pulley that lifted his polio-crippled body out of bed.",
+        "style": "science",
+        "demand": "Midgley is a Veritasium-class search: 'most damaging inventor' is a perennial query. Wikipedia holds and spikes whenever a climate or lead-pipe story trends. English cinematic 12-minute versions in this painted style do not exist.",
+        "why": "Same form as Tambora→Frankenstein: one cause, two disasters, a personal ending. Every scene is a 1920s lab, a filling station, a sky.",
+        "gap": "Talking-head essays and Wikipedia-readalouds own the slot. A hook-first painted cut does not.",
+    },
+    {
+        "rank": 2,
+        "topic": "The Demon Core",
+        "title": "They Held a Bomb Core Apart With a Screwdriver",
+        "hook": "In 1946, Louis Slotin was showing visiting scientists how close a plutonium pit could get to going critical. The only thing between the two beryllium hemispheres was a flathead screwdriver. It slipped.",
+        "style": "science",
+        "demand": "Demon Core is a reliable curiosity query (nuclear, Manhattan, 'third eye' stories). Wendigoon-adjacent audience already watches it. Short, complete, viscerally visual — the screwdriver, the blue flash, the hospital.",
+        "why": "Exactly the Icarus shape: one rule, one demonstration, one night. 8–12 minutes, no padding.",
+        "gap": "Reddit lore and 40-minute documentaries. No Odyssey-voiced 12-minute painted version.",
+    },
+    {
+        "rank": 3,
+        "topic": "Challenger — the night they launched anyway",
+        "title": "The Engineers Said No. The Shuttle Went Up Anyway.",
+        "hook": "The night before Challenger, Thiokol engineers recommended not launching below 53°F. It was 36°. Management overruled them. Seventy-three seconds later the O-rings that had been too cold to seal did what the memo said they would do.",
+        "style": "science",
+        "demand": "Challenger is a top-tier disaster query, seasonal around January 28 and any new NASA failure. Search is huge; the 'they launched anyway' causal cut is still thinner than anniversary montages.",
+        "why": "A conference call is the Cyclops. The rubber ring is the wings. Same art form, 1986.",
+        "gap": "News packages and 90-minute docs. Not a cinematic 12-minute thesis.",
+    },
+    {
+        "rank": 4,
+        "topic": "Clair Patterson vs. leaded gasoline",
+        "title": "He Dated the Earth — Then They Tried to Bury Him",
+        "hook": "Clair Patterson spent years in a white room to weigh the age of the planet: 4.55 billion. The number that would not go away was lead. It was in the ice, the ocean, and his own blood — because a company had put it in the gasoline.",
+        "style": "science",
+        "demand": "Patterson + tetraethyllead spikes with every lead-pipe and 'age of the Earth' cycle. Veritasium proved the appetite. Our differentiator is the painted lab, not a presenter in a warehouse.",
+        "why": "Clean-room vs. smelter. Ice cores. A man vs. Ethyl Corporation. Visual as a myth.",
+        "gap": "One famous talking-head video. The 'entire story' painted pack is open.",
+    },
+    {
+        "rank": 5,
+        "topic": "The Radium Girls",
+        "title": "They Were Told to Sharpen the Brush With Their Lips",
+        "hook": "Factory girls painting watch dials were taught to lip-point the brush. The paint was radium. Their bones began to glow. The company said they were hysterical — until a dead girl's bones lit up a laboratory.",
+        "style": "science",
+        "demand": "Radium Girls is a steady true-crime/history-of-science hybrid query. Strong female-lead search, strong thumbnail (glowing jaw, dark factory).",
+        "why": "Matches dancing-plague energy: a workplace rule that was the disease. Painterly night interiors.",
+        "gap": "Podcasts and a 2018 film. YouTube 'entire story explained' in this style is thin.",
+    },
+    {
+        "rank": 6,
+        "topic": "Ignaz Semmelweis",
+        "title": "The Doctors Wouldn't Wash Their Hands",
+        "hook": "In a Vienna maternity ward, women died of childbed fever after the doctors walked over from the autopsy room. Semmelweis made them wash in chlorine. Deaths collapsed. The hospital rejected him. He died of an infected wound in an asylum.",
+        "style": "science",
+        "demand": "Semmelweis is a medical-history evergreen, revived every pandemic. 'Handwashing' is one of the most searched public-health stories on Earth.",
+        "why": "The Broad-Street-pump shape: one ward, one rule, one man nobody believed. Dark Vault voice, science pictures.",
+        "gap": "TED-adjacent lectures. Not a 12-minute tragedy with a thesis.",
+    },
+    {
+        "rank": 7,
+        "topic": "Stanislav Petrov, 26 September 1983",
+        "title": "The Man Who Did Not End the World",
+        "hook": "The satellite said American missiles were in the air. Protocol said report it. Petrov looked at the screen, decided the machine was lying, and did not pick up the phone.",
+        "style": "science",
+        "demand": "Petrov spikes every 'close calls' roundup and every nuclear-news cycle. High CTR title. Cold-war teal lighting is built for this channel's look.",
+        "why": "One night, one screen, one refusal. The entire story fits 8 minutes without cheating.",
+        "gap": "Shorts and list videos. A full painted scene-pack of Serpukhov-15 is open.",
+    },
+    {
+        "rank": 8,
+        "topic": "Hubble's flawed mirror",
+        "title": "They Polished It Perfectly — To the Wrong Shape",
+        "hook": "The Hubble mirror was the most precise thing anyone had ground. It was also 2.2 microns too flat. The error was in the test instrument that told them they were done. For three years the most expensive telescope in history could not see.",
+        "style": "science",
+        "demand": "Hubble is a monster astronomy query; 'Hubble repair' and spherical aberration still search. JWST news recycles the audience.",
+        "why": "A perfect mistake. Space, clean rooms, the 1993 astronauts with a corrective lens. Visual paradise.",
+        "gap": "NASA PR and long docs. The causal 12-minute cut ('the test lied') is the opening we own.",
+    },
+    {
+        "rank": 9,
+        "topic": "Katalin Karikó and mRNA",
+        "title": "They Demoted Her. Then Her Letters Saved Millions.",
+        "hook": "Katalin Karikó spent decades being rejected, demoted, and moved to a basement office for insisting that messenger RNA could become medicine. The modification nobody funded became the COVID vaccines. The Nobel arrived in 2023.",
+        "style": "science",
+        "demand": "Karikó + mRNA is still a high-volume search three years after the Nobel. Health, immigrant-scientist, and 'they laughed at her' audiences overlap.",
+        "why": "Same lesson as Icarus inverted: the invention was not believed. Painted labs, fluorescent benches, a woman at a desk with a grant stamped no.",
+        "gap": "News profiles. Not an entire-story cinematic explainer with scene cards.",
+    },
+    {
+        "rank": 10,
+        "topic": "The Carrington Event, 1859",
+        "title": "The Sun Set the Telegraph Office on Fire",
+        "hook": "On 1 September 1859 Richard Carrington watched a flare burst on the sun. Hours later, telegraph systems sparked, paper caught, and some operators kept sending with the batteries disconnected — the line was being powered by the sky.",
+        "style": "science",
+        "demand": "Carrington is a staple of 'solar storm' search, revived whenever NOAA posts an aurora watch. Prepper + science + history overlap is huge.",
+        "why": "Last-three energy (one physical cause, civilization feels it). Auroras, brass instruments, a burning telegraph. Maps of the night side of Earth.",
+        "gap": "Doomsday listicles. A precise 1859 story with a thesis is rarer.",
+    },
+]
+
+
+def _detect_lane(niche: str, lane: str = "") -> str:
+    text = f"{lane} {niche}".lower()
+    keys = (
+        "science", "tech", "technology", "nuclear", "nasa", "lab", "inventor",
+        "engineer", "physics", "medicine", "space", "computer", "machine",
+    )
+    if any(k in text for k in keys):
+        return "science"
+    return "myth"
+
+
+def analyze_niche(niche: str, count: int = 10, lane: str = "") -> Dict[str, Any]:
     """Return patterns, demand, and ranked topics for a niche description."""
-    demand = _demand_snapshot(DEMAND_CANDIDATES)
-    briefing = {
-        "niche": niche.strip() or "cinematic story explainers and investigative documentaries",
-        "patterns": CHANNEL_PATTERNS,
-        "search": {
-            "method": "English Wikipedia pageviews, Aug 2025–Aug 2026 (proxy for what people look up)",
-            "headline": (
-                "Odyssey is the monster query (9.0M views, still rising). "
-                "Iliad 3.1M, Gilgamesh 1.63M and rising, Ramayana 1.30M rising, "
-                "Beowulf 1.13M, Aeneid 0.91M rising fast, Journey to the West 0.80M, "
-                "Ragnarök 0.53M. The Odyssey slot is crowded. The next-epic slots are not."
-            ),
-            "rows": demand[:16],
-        },
-        "what_clicks": [
-            "Title grammar: 'The ENTIRE Story of X Explained' + a causal subtitle, not a summary subtitle.",
-            "Thumbnail: one figure in trouble, amber/teal, no text-heavy maps.",
-            "First 15 seconds: the whole story happened because of ONE mistake or bargain.",
-            "Cuts every 8–18 seconds. New picture every cut.",
-            "Sleep-omnibus (2–3h) wins raw views; 8–15 min hook-first wins subscriber conversion for a new channel.",
-            "Do not retell the Odyssey unless the angle is genuinely new. The copies are already up.",
-        ],
-        "topics": list(TEN_TOPICS)[:count],
-    }
+    chosen = _detect_lane(niche, lane)
+    if chosen == "science":
+        demand = _demand_snapshot(SCIENCE_DEMAND)
+        briefing = {
+            "lane": "science",
+            "niche": niche.strip()
+            or "science and tech told as cinematic story explainers",
+            "patterns": SCIENCE_CHANNEL_PATTERNS,
+            "search": {
+                "method": "English Wikipedia pageviews, Aug 2025–Aug 2026 (proxy for what people look up)",
+                "headline": (
+                    "Science in this art form is not 'how does X work'. It is Icarus with a lab: "
+                    "one bargain, one night, one machine. Chernobyl and Challenger are the saturated "
+                    "queries. Midgley, Demon Core, Patterson, Radium Girls, Petrov, Hubble's mirror, "
+                    "Karikó, and Carrington are the open cinematic slots — same cut rhythm as "
+                    "Bronze Age collapse, Tambora→Frankenstein, and the dancing plague."
+                ),
+                "rows": demand[:16],
+            },
+            "what_clicks": [
+                "Same title grammar: 'The ENTIRE Story of X Explained' + a causal subtitle.",
+                "Thumbnail: one person or one machine in trouble — screwdriver, O-ring, glowing jaw, not a diagram.",
+                "First 15 seconds: the whole disaster or discovery happened because of ONE decision.",
+                "Painted 16:9 stills, not Kurzgesagt blobs and not a presenter in a warehouse.",
+                "Period-accurate labs and machines. Cuts every 8–18 seconds.",
+                "Skip a generic Chernobyl recap unless the angle is only the safety test.",
+            ],
+            "topics": list(SCIENCE_TOPICS)[:count],
+        }
+    else:
+        demand = _demand_snapshot(DEMAND_CANDIDATES)
+        briefing = {
+            "lane": "myth",
+            "niche": niche.strip() or "cinematic story explainers and investigative documentaries",
+            "patterns": CHANNEL_PATTERNS,
+            "search": {
+                "method": "English Wikipedia pageviews, Aug 2025–Aug 2026 (proxy for what people look up)",
+                "headline": (
+                    "Odyssey is the monster query (9.0M views, still rising). "
+                    "Iliad 3.1M, Gilgamesh 1.63M and rising, Ramayana 1.30M rising, "
+                    "Beowulf 1.13M, Aeneid 0.91M rising fast, Journey to the West 0.80M, "
+                    "Ragnarök 0.53M. The Odyssey slot is crowded. The next-epic slots are not."
+                ),
+                "rows": demand[:16],
+            },
+            "what_clicks": [
+                "Title grammar: 'The ENTIRE Story of X Explained' + a causal subtitle, not a summary subtitle.",
+                "Thumbnail: one figure in trouble, amber/teal, no text-heavy maps.",
+                "First 15 seconds: the whole story happened because of ONE mistake or bargain.",
+                "Cuts every 8–18 seconds. New picture every cut.",
+                "Sleep-omnibus (2–3h) wins raw views; 8–15 min hook-first wins subscriber conversion for a new channel.",
+                "Do not retell the Odyssey unless the angle is genuinely new. The copies are already up.",
+            ],
+            "topics": list(TEN_TOPICS)[:count],
+        }
 
     client = LlmClient()
     if client.enabled and niche.strip():
@@ -234,6 +436,15 @@ def analyze_niche(niche: str, count: int = 10) -> Dict[str, Any]:
             logger.warning("LLM niche synthesis skipped: %s", exc)
 
     return briefing
+
+
+def _style_name(value: Any) -> str:
+    text = str(value or "").strip()
+    if text == "dark_vault":
+        return "dark_vault"
+    if text == "science":
+        return "science"
+    return "odyssey"
 
 
 def _demand_snapshot(slugs: List[str]) -> List[Dict[str, Any]]:
@@ -306,7 +517,7 @@ how unsaturated the 'entire story explained' slot is). Skip a straight Odyssey r
 
 JSON schema:
 {{"ideas": [{{"rank": 1, "topic": "...", "title": "clickable title",
-"hook": "one-sentence causal hook", "style": "odyssey|dark_vault",
+"hook": "one-sentence causal hook", "style": "odyssey|dark_vault|science",
 "demand": "why this is being searched/clicked", "why": "why it fascinates",
 "gap": "what existing videos miss"}}]}}""",
         temperature=0.7,
@@ -324,7 +535,7 @@ JSON schema:
                 "topic": str(idea.get("topic", "")).strip(),
                 "title": str(idea.get("title", "")).strip(),
                 "hook": str(idea.get("hook", "")).strip(),
-                "style": "dark_vault" if idea.get("style") == "dark_vault" else "odyssey",
+                "style": _style_name(idea.get("style")),
                 "demand": str(idea.get("demand", "")).strip(),
                 "why": str(idea.get("why", "")).strip(),
                 "gap": str(idea.get("gap", "")).strip(),

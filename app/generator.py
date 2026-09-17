@@ -55,7 +55,7 @@ def normalize_pack(
         if not isinstance(raw, dict):
             continue
         narration = str(raw.get("narration") or "").strip()
-        image_prompt = normalize_image_prompt(str(raw.get("image_prompt") or "").strip())
+        image_prompt = normalize_image_prompt(str(raw.get("image_prompt") or "").strip(), style)
         if not narration or not image_prompt:
             continue
         duration = _as_int(raw.get("duration_seconds"), 12)
@@ -97,7 +97,7 @@ def normalize_pack(
         "duration_key": duration_key,
         "titles": titles[:5],
         "thumbnail_text": str(data.get("thumbnail_text") or titles[0]).strip(),
-        "thumbnail_prompt": normalize_image_prompt(str(data.get("thumbnail_prompt") or "").strip()),
+        "thumbnail_prompt": normalize_image_prompt(str(data.get("thumbnail_prompt") or "").strip(), style),
         "thumbnail_path": None,
         "hook": str(data.get("hook") or cleaned[0]["narration"]).strip(),
         "driving_question": str(data.get("driving_question") or "").strip(),

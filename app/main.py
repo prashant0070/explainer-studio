@@ -38,6 +38,7 @@ class GenerateRequest(BaseModel):
 class IntelRequest(BaseModel):
     niche: str = ""
     count: int = 10
+    lane: str = ""
 
 
 class ImageRequest(BaseModel):
@@ -88,7 +89,7 @@ def get_project(project_id: str) -> Dict[str, Any]:
 @app.post("/api/research/intel")
 def research_intel(req: IntelRequest) -> Dict[str, Any]:
     try:
-        return analyze_niche(req.niche, max(5, min(req.count, 12)))
+        return analyze_niche(req.niche, max(5, min(req.count, 12)), lane=req.lane)
     except (ResearchError, LlmError) as exc:
         raise HTTPException(400, str(exc)) from exc
 

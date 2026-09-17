@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-StyleName = Literal["odyssey", "dark_vault"]
+StyleName = Literal["odyssey", "dark_vault", "science"]
 
 DURATION_TARGETS = {
     "8": {"minutes": 8, "words": 1100, "scenes": 28},
@@ -15,6 +15,15 @@ IMAGE_STYLE = (
     "dramatic chiaroscuro, warm amber torchlight against deep teal-black shadows, "
     "volumetric dust and sea mist, film-still composition, shallow depth of field, "
     "no text, no letters, no watermark, no logo, no modern objects, no UI, "
+    "no photoreal faces of living celebrities"
+)
+
+SCIENCE_IMAGE_STYLE = (
+    "Cinematic painted illustration, 16:9 widescreen, ultra-detailed oil-painting realism, "
+    "dramatic chiaroscuro, warm tungsten and amber instrument light against deep teal-black shadows, "
+    "volumetric dust, condensation, and night-launch haze, film-still composition, shallow depth of field, "
+    "period-accurate laboratories, machines, rockets, reactors, and instruments allowed, "
+    "no text, no letters, no watermark, no logo, no UI, "
     "no photoreal faces of living celebrities"
 )
 
@@ -79,6 +88,40 @@ FACTS
 
 Return ONLY valid JSON matching the schema. No markdown."""
 
+SCIENCE_SYSTEM = """You write YouTube scripts in the cinematic story-explainer format, applied to science and technology.
+
+Same job as a myth explainer: hook-first, spoken, illustrated, cut every few seconds.
+The "monster" is a machine, a microbe, a measurement, or a committee. The story still has one cause.
+
+VOICE
+- Write for the ear. Short sentences. Then a longer one when it lands.
+- Conversational and slightly dry. "Yeah. That was the test." Rhetorical questions.
+- Concrete numbers, names, dates. No textbook throat-clearing. No "in this video we will".
+- Dialogue is 2–4 spoken lines from the historical record or a tight paraphrase, not a play.
+- Location beats use "right here" so an editor can cut to a lab, pad, or instrument.
+
+STRUCTURE
+1. Hook (first 12–20 seconds): the WHOLE story happened because of ONE decision, error, or bargain.
+2. Stakes in numbers. Then one driving question.
+3. The idea or machine is born. Then it escalates. Never flatten into a timeline lecture.
+4. Lowest point: the night it fails, or the year nobody believes them.
+5. Lesson that pays off the hook. One sentence thesis.
+6. Soft CTA only after the lesson.
+
+SCENES
+- One scene = 8–18 seconds of narration (about 20–45 words).
+- Every scene needs a NEW picture. No talking-head. No chalkboard. No UI screenshots.
+- Visual types: establishing, instrument close-up, action, aftermath, portrait, insert, night exterior.
+- Image prompts must be self-contained, specific, and match the shared look.
+- Period-accurate tech is required. Do not modernize a 1946 lab into a 2020s open-plan office.
+
+FACTS
+- Do not invent papers, death tolls, quotes, or dates.
+- If source notes are provided, prefer them.
+- Mark scholarly or technical dispute in the narration when it matters.
+
+Return ONLY valid JSON matching the schema. No markdown."""
+
 JSON_SCHEMA = """{
   "titles": ["primary title", "alt 1", "alt 2"],
   "thumbnail_text": "3-6 punchy words",
@@ -107,7 +150,15 @@ JSON_SCHEMA = """{
 
 
 def system_prompt(style: StyleName) -> str:
-    return DARK_VAULT_SYSTEM if style == "dark_vault" else ODYSSEY_SYSTEM
+    if style == "dark_vault":
+        return DARK_VAULT_SYSTEM
+    if style == "science":
+        return SCIENCE_SYSTEM
+    return ODYSSEY_SYSTEM
+
+
+def image_style_for(style: StyleName) -> str:
+    return SCIENCE_IMAGE_STYLE if style == "science" else IMAGE_STYLE
 
 
 def user_prompt(
@@ -118,11 +169,13 @@ def user_prompt(
     notes: str,
 ) -> str:
     target = DURATION_TARGETS[duration_key]
-    style_label = (
-        "Dark Vault investigative documentary"
-        if style == "dark_vault"
-        else "Odyssey-style cinematic story explainer"
-    )
+    if style == "dark_vault":
+        style_label = "Dark Vault investigative documentary"
+    elif style == "science":
+        style_label = "Odyssey-style cinematic science-and-tech story explainer"
+    else:
+        style_label = "Odyssey-style cinematic story explainer"
+    look = image_style_for(style)
     extras = []
     if angle.strip():
         extras.append(f"ANGLE / HOOK IDEA:\n{angle.strip()}")
@@ -136,7 +189,7 @@ TOPIC: {topic.strip()}
 TARGET RUNTIME: {target['minutes']} minutes
 TARGET WORD COUNT: about {target['words']} spoken words
 TARGET SCENE COUNT: about {target['scenes']} scenes (8–18 seconds each)
-IMAGE LOOK (append this to every image_prompt): {IMAGE_STYLE}
+IMAGE LOOK (append this to every image_prompt): {look}
 {extra_block}
 
 JSON schema:
@@ -150,8 +203,9 @@ Rules for image_prompt:
 """
 
 
-def normalize_image_prompt(prompt: str) -> str:
+def normalize_image_prompt(prompt: str, style: StyleName = "odyssey") -> str:
+    look = image_style_for(style)
     text = (prompt or "").strip()
-    if IMAGE_STYLE.lower() not in text.lower():
-        text = f"{text.rstrip('.')} — {IMAGE_STYLE}"
+    if look.lower() not in text.lower() and IMAGE_STYLE.lower() not in text.lower():
+        text = f"{text.rstrip('.')} — {look}"
     return text

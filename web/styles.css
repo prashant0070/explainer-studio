@@ -176,7 +176,7 @@ pre {
 .topic-card h3 { margin: 4px 0 10px; font-size: 22px; line-height: 1.25; }
 .hook-mini { font-size: 17px; line-height: 1.45; margin: 0 0 12px; }
 .topic-card .prompt { margin: 0 0 8px; }
-.topic-card button { margin-top: 10px; }
+.lane-btn.active { border-color: var(--accent); color: var(--accent); }
 
 @media (max-width: 960px) {
   main { grid-template-columns: 1fr; }

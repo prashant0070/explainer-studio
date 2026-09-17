@@ -2,6 +2,12 @@ const $ = (id) => document.getElementById(id);
 
 let current = null;
 let pollTimer = null;
+let currentLane = "myth";
+
+const NICHE_MYTH =
+  'Cinematic story explainers like "The ENTIRE Story of X Explained" plus Dark Vault investigations — one causal hook, painted scenes, 8–15 minutes';
+const NICHE_SCIENCE =
+  "Science and tech told as cinematic story explainers — the ENTIRE story of one discovery, disaster, or machine. Same art form as Icarus: one causal hook, painted 16:9 stills, cut every 8–18 seconds. Not a lecture. Not Kurzgesagt blobs.";
 
 async function api(path, options) {
   const res = await fetch(path, {
@@ -75,7 +81,12 @@ function renderPack(project) {
   $("empty").hidden = true;
   $("intel").hidden = true;
   $("pack").hidden = false;
-  $("pack-style").textContent = project.style === "dark_vault" ? "Dark Vault" : "Odyssey explainer";
+  $("pack-style").textContent =
+    project.style === "dark_vault"
+      ? "Dark Vault"
+      : project.style === "science"
+        ? "Science & tech"
+        : "Odyssey explainer";
   $("pack-title").textContent = (project.titles && project.titles[0]) || project.topic;
   $("pack-meta").textContent = `${project.scenes.length} scenes · ${project.word_count} words · ~${Math.round(project.runtime_seconds / 60)} min`;
   $("pack-hook").textContent = project.hook;
@@ -185,7 +196,7 @@ $("intel-btn").onclick = async () => {
   try {
     const data = await (await api("/api/research/intel", {
       method: "POST",
-      body: JSON.stringify({ niche: $("niche").value, count: 10 }),
+      body: JSON.stringify({ niche: $("niche").value, count: 10, lane: currentLane }),
     })).json();
     renderIntel(data);
     fillIdeaList(data.topics || []);
@@ -233,7 +244,9 @@ function fillIdeaList(ideas) {
 
 function applyTopic(idea) {
   $("topic").value = idea.topic || "";
-  $("style").value = idea.style === "dark_vault" ? "dark_vault" : "odyssey";
+  if (idea.style === "dark_vault") $("style").value = "dark_vault";
+  else if (idea.style === "science") $("style").value = "science";
+  else $("style").value = "odyssey";
   $("angle").value = idea.hook || "";
   $("topic").scrollIntoView({ behavior: "smooth", block: "center" });
 }
@@ -269,7 +282,13 @@ function renderIntel(data) {
     .map(
       (t) =>
         `<article class="topic-card">
-          <p class="scene-kicker">#${t.rank} · ${t.style === "dark_vault" ? "Dark Vault" : "Odyssey explainer"}</p>
+          <p class="scene-kicker">#${t.rank} · ${
+            t.style === "dark_vault"
+              ? "Dark Vault"
+              : t.style === "science"
+                ? "Science & tech"
+                : "Odyssey explainer"
+          }</p>
           <h3>${escapeHtml(t.title || t.topic)}</h3>
           <p class="hook-mini">${escapeHtml(t.hook)}</p>
           <p class="prompt"><strong>Demand.</strong> ${escapeHtml(t.demand)}</p>
@@ -449,3 +468,13 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
 
 loadHealth();
 loadRecent();
+
+$("lane-myth").onclick = () => setLane("myth");
+$("lane-science").onclick = () => setLane("science");
+
+function setLane(lane) {
+  currentLane = lane;
+  $("lane-myth").classList.toggle("active", lane === "myth");
+  $("lane-science").classList.toggle("active", lane === "science");
+  $("niche").value = lane === "science" ? NICHE_SCIENCE : NICHE_MYTH;
+}

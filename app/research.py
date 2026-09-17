@@ -40,7 +40,7 @@ cause, a clear escalation, and a lesson. Avoid topics that need recent statistic
 
 JSON schema:
 {{"ideas": [{{"topic": "...", "title": "clickable title", "hook": "one-sentence causal hook",
-"style": "odyssey|dark_vault", "why": "why this works for the niche"}}]}}""",
+"style": "odyssey|dark_vault|science", "why": "why this works for the niche"}}]}}""",
         temperature=0.9,
     )
     ideas = data.get("ideas")
@@ -54,7 +54,9 @@ JSON schema:
                     "topic": str(idea.get("topic", "")).strip(),
                     "title": str(idea.get("title", "")).strip(),
                     "hook": str(idea.get("hook", "")).strip(),
-                    "style": "dark_vault" if idea.get("style") == "dark_vault" else "odyssey",
+                    "style": "science"
+                    if idea.get("style") == "science"
+                    else ("dark_vault" if idea.get("style") == "dark_vault" else "odyssey"),
                     "why": str(idea.get("why", "")).strip(),
                 }
             )

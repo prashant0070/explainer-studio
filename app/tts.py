@@ -18,7 +18,7 @@ _TICKS = 10_000_000
 
 STYLE_VOICES = {
     "odyssey": "en-US-AndrewNeural",
-    "dark_vault": "en-US-ChristopherNeural",
+    "science": "en-US-GuyNeural",
 }
 DEFAULT_VOICE = "en-US-AndrewNeural"
 
