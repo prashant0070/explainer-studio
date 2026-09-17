@@ -16,6 +16,7 @@ from app.llm import LlmError
 from app.prompts import DURATION_TARGETS, StyleName
 from app.render import RenderBusy, render_status, start_render
 from app.research import ResearchError, notes_from_research, research_topic, suggest_topics
+from app.intel import analyze_niche
 from app.store import export_zip, image_path, list_projects, load_project, project_dir, save_project
 from app.tts import VOICE_MENU
 from app.visuals import VisualError, generate_free_image
@@ -34,9 +35,9 @@ class GenerateRequest(BaseModel):
     research: bool = True
 
 
-class IdeasRequest(BaseModel):
-    niche: str = Field(min_length=3)
-    count: int = 6
+class IntelRequest(BaseModel):
+    niche: str = ""
+    count: int = 10
 
 
 class ImageRequest(BaseModel):
@@ -50,6 +51,7 @@ class RenderRequest(BaseModel):
     captions: bool = True
     music: bool = True
     stock_video: bool = True
+    image_engine: str = "auto"  # auto | paid | free
     scene_limit: int = 0
 
 
@@ -83,10 +85,21 @@ def get_project(project_id: str) -> Dict[str, Any]:
     return project
 
 
-@app.post("/api/research/ideas")
-def research_ideas(req: IdeasRequest) -> Dict[str, Any]:
+@app.post("/api/research/intel")
+def research_intel(req: IntelRequest) -> Dict[str, Any]:
     try:
-        ideas = suggest_topics(req.niche, max(1, min(req.count, 12)))
+        return analyze_niche(req.niche, max(5, min(req.count, 12)))
+    except (ResearchError, LlmError) as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/research/ideas")
+def research_ideas(req: IntelRequest) -> Dict[str, Any]:
+    niche = req.niche.strip()
+    if len(niche) < 3:
+        raise HTTPException(400, "Describe your niche first")
+    try:
+        ideas = suggest_topics(niche, max(1, min(req.count, 12)))
     except (ResearchError, LlmError) as exc:
         raise HTTPException(400, str(exc)) from exc
     return {"ideas": ideas}

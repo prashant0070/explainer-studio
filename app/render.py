@@ -92,6 +92,11 @@ def _run(project_id: str, options: Dict[str, Any]) -> None:
     use_captions = options.get("captions", True)
     use_music = options.get("music", True)
     prefer_stock = bool(options.get("stock_video", True))
+    image_engine = str(options.get("image_engine") or "auto")
+    if image_engine not in {"auto", "paid", "free"}:
+        image_engine = "auto"
+    if image_engine == "paid":
+        prefer_stock = False  # user explicitly wants generated stills everywhere
     limit = int(options.get("scene_limit") or 0)
     if limit > 0:
         scenes = scenes[:limit]
@@ -132,14 +137,20 @@ def _run(project_id: str, options: Dict[str, Any]) -> None:
             project_id, "visuals", i / total,
             f"Visual {i + 1}/{total}: {scene.get('visual_type', 'scene')}",
         )
-        visual = acquire_scene_visual(scene, folder, prefer_stock_video=prefer_stock)
+        visual = acquire_scene_visual(
+            scene, folder, prefer_stock_video=prefer_stock, image_engine=image_engine
+        )
         visuals.append(visual)
         if visual["kind"] == "image":
             scene["image_path"] = f"/api/projects/{project_id}/files/{Path(visual['path']).name}"
 
     if project.get("thumbnail_prompt") and not project.get("thumbnail_path"):
         try:
-            generate_thumbnail(project["thumbnail_prompt"], folder / "images" / "thumbnail.png")
+            generate_thumbnail(
+                project["thumbnail_prompt"],
+                folder / "images" / "thumbnail.png",
+                image_engine=image_engine,
+            )
             project["thumbnail_path"] = f"/api/projects/{project_id}/files/thumbnail.png"
         except VisualError as exc:
             logger.warning("Thumbnail generation skipped: %s", exc)

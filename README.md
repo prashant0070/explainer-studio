@@ -37,7 +37,9 @@ You also need **FFmpeg** on your PATH (`brew install ffmpeg` / `sudo apt install
 
 Open [http://127.0.0.1:8787](http://127.0.0.1:8787).
 
-1. **Find a topic** — describe your niche, get researched ideas, click one.
+1. **Find a topic** — describe your niche and hit *Analyze the niche*. You get
+   what top channels are doing, what went viral, Wikipedia search demand, and
+   10 ranked topics. Click one to fill the script form.
 2. **Generate script** — auto-research grounds the script in Wikipedia facts.
 3. **Produce full video** — pick a voice, hit the button, watch the progress
    bar walk through narration → visuals → captions → assembly → master → QC.

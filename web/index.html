@@ -17,12 +17,13 @@
 
   <main>
     <section class="panel form-panel">
-      <h2>Find a topic</h2>
+      <h2>Niche intel</h2>
       <label>Niche / channel description
-        <textarea id="niche" rows="2" placeholder="A channel about forgotten disasters and the one decision that caused them"></textarea>
+        <textarea id="niche" rows="3" placeholder="Cinematic story explainers — entire myths and disasters, hook-first, cut every few seconds">Cinematic story explainers like "The ENTIRE Story of X Explained" plus Dark Vault investigations — one causal hook, painted scenes, 8–15 minutes</textarea>
       </label>
       <div class="actions">
-        <button id="ideas-btn" class="ghost">Research topic ideas</button>
+        <button id="intel-btn" class="primary">Analyze the niche</button>
+        <button id="ideas-btn" class="ghost">Quick ideas only</button>
       </div>
       <ul id="ideas" class="recent"></ul>
 
@@ -63,10 +64,10 @@
 
     <section class="panel script-panel" id="workspace">
       <div class="empty" id="empty">
-        Describe your niche to research topics, or generate a pack directly.
-        Then hit <strong>Produce full video</strong>: free voiceover, free visuals,
-        word-timed captions, professional cuts, and an automated quality report.
+        Hit <strong>Analyze the niche</strong> to see what top channels are doing,
+        what went viral, what people are searching, and 10 topics ranked for this format.
       </div>
+      <div id="intel" hidden></div>
       <div id="pack" hidden>
         <div class="pack-head">
           <div>
@@ -84,6 +85,13 @@
         <div class="render-controls">
           <label>Voice
             <select id="voice"></select>
+          </label>
+          <label>Image engine
+            <select id="image-engine">
+              <option value="auto" selected>Auto (paid if key set, else free)</option>
+              <option value="paid">Paid — DALL·E, same as image packs</option>
+              <option value="free">Free — Pollinations</option>
+            </select>
           </label>
           <label class="check-label"><input type="checkbox" id="opt-captions" checked /> Captions</label>
           <label class="check-label"><input type="checkbox" id="opt-music" checked /> Music (if a track exists in data/music)</label>

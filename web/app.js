@@ -27,6 +27,12 @@ async function loadHealth() {
     const llm = data.llm_ready ? "LLM ready" : "Add LLM_API_KEY to generate scripts";
     const stock = data.stock_ready ? "stock footage on" : "free AI images";
     $("status").textContent = `${llm} · ${stock} · free voiceover · ${data.model}`;
+    const paidOpt = document.querySelector('#image-engine option[value="paid"]');
+    if (paidOpt) {
+      paidOpt.textContent = data.images_ready
+        ? "Paid — DALL·E, same as image packs (key detected)"
+        : "Paid — DALL·E, same as image packs (no key set)";
+    }
     const voiceSel = $("voice");
     voiceSel.innerHTML = "";
     for (const voice of data.voices || []) {
@@ -67,6 +73,7 @@ async function openProject(id) {
 function renderPack(project) {
   current = project;
   $("empty").hidden = true;
+  $("intel").hidden = true;
   $("pack").hidden = false;
   $("pack-style").textContent = project.style === "dark_vault" ? "Dark Vault" : "Odyssey explainer";
   $("pack-title").textContent = (project.titles && project.titles[0]) || project.topic;
@@ -169,7 +176,26 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-// ------------------------------------------------------------ research ideas
+// ------------------------------------------------------------ niche intel
+
+$("intel-btn").onclick = async () => {
+  $("form-error").textContent = "";
+  $("intel-btn").disabled = true;
+  $("intel-btn").textContent = "Reading channels + search…";
+  try {
+    const data = await (await api("/api/research/intel", {
+      method: "POST",
+      body: JSON.stringify({ niche: $("niche").value, count: 10 }),
+    })).json();
+    renderIntel(data);
+    fillIdeaList(data.topics || []);
+  } catch (err) {
+    $("form-error").textContent = err.message;
+  } finally {
+    $("intel-btn").disabled = false;
+    $("intel-btn").textContent = "Analyze the niche";
+  }
+};
 
 $("ideas-btn").onclick = async () => {
   $("form-error").textContent = "";
@@ -185,25 +211,99 @@ $("ideas-btn").onclick = async () => {
       method: "POST",
       body: JSON.stringify({ niche, count: 6 }),
     })).json();
-    const list = $("ideas");
-    list.innerHTML = "";
-    for (const idea of data.ideas || []) {
-      const item = document.createElement("li");
-      item.innerHTML = `<button class="ghost" title="${escapeHtml(idea.why)}">${escapeHtml(idea.title || idea.topic)}</button>`;
-      item.querySelector("button").onclick = () => {
-        $("topic").value = idea.topic;
-        $("style").value = idea.style === "dark_vault" ? "dark_vault" : "odyssey";
-        $("angle").value = idea.hook || "";
-      };
-      list.appendChild(item);
-    }
+    fillIdeaList(data.ideas || []);
   } catch (err) {
     $("form-error").textContent = err.message;
   } finally {
     $("ideas-btn").disabled = false;
-    $("ideas-btn").textContent = "Research topic ideas";
+    $("ideas-btn").textContent = "Quick ideas only";
   }
 };
+
+function fillIdeaList(ideas) {
+  const list = $("ideas");
+  list.innerHTML = "";
+  for (const idea of ideas) {
+    const item = document.createElement("li");
+    item.innerHTML = `<button class="ghost">${escapeHtml(idea.title || idea.topic)}</button>`;
+    item.querySelector("button").onclick = () => applyTopic(idea);
+    list.appendChild(item);
+  }
+}
+
+function applyTopic(idea) {
+  $("topic").value = idea.topic || "";
+  $("style").value = idea.style === "dark_vault" ? "dark_vault" : "odyssey";
+  $("angle").value = idea.hook || "";
+  $("topic").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function renderIntel(data) {
+  $("empty").hidden = true;
+  $("pack").hidden = true;
+  $("intel").hidden = false;
+  const search = data.search || {};
+  const rows = (search.rows || [])
+    .map(
+      (r) =>
+        `<tr><td>${escapeHtml(r.topic)}</td><td>${Number(r.views_12m).toLocaleString()}</td>` +
+        `<td>${Number(r.last_month).toLocaleString()}</td>` +
+        `<td class="trend-${r.trend}">${escapeHtml(r.trend)}</td></tr>`
+    )
+    .join("");
+  const patterns = (data.patterns || [])
+    .map(
+      (p) =>
+        `<article class="intel-card">
+          <p class="scene-kicker">${escapeHtml(p.channel)}</p>
+          <p>${escapeHtml(p.pattern)}</p>
+          <p class="prompt">${escapeHtml(p.proof)}</p>
+          <p class="prompt">${escapeHtml(p.takeaway)}</p>
+        </article>`
+    )
+    .join("");
+  const clicks = (data.what_clicks || [])
+    .map((c) => `<li>${escapeHtml(c)}</li>`)
+    .join("");
+  const topics = (data.topics || [])
+    .map(
+      (t) =>
+        `<article class="topic-card">
+          <p class="scene-kicker">#${t.rank} · ${t.style === "dark_vault" ? "Dark Vault" : "Odyssey explainer"}</p>
+          <h3>${escapeHtml(t.title || t.topic)}</h3>
+          <p class="hook-mini">${escapeHtml(t.hook)}</p>
+          <p class="prompt"><strong>Demand.</strong> ${escapeHtml(t.demand)}</p>
+          <p class="prompt"><strong>Why it fascinates.</strong> ${escapeHtml(t.why)}</p>
+          <p class="prompt"><strong>Gap.</strong> ${escapeHtml(t.gap)}</p>
+          <button class="primary use-topic" data-rank="${t.rank}">Use this topic</button>
+        </article>`
+    )
+    .join("");
+  $("intel").innerHTML = `
+    <div class="pack-head">
+      <div>
+        <p class="eyebrow">Niche intel</p>
+        <h2>What is working, what people search, ten topics</h2>
+        <p class="meta">${escapeHtml(data.niche || "")}</p>
+      </div>
+    </div>
+    <p class="hook">${escapeHtml(search.headline || "")}</p>
+    <h3 class="intel-h">What top channels are doing</h3>
+    <div class="intel-grid">${patterns}</div>
+    <h3 class="intel-h">What people look up</h3>
+    <p class="thesis">${escapeHtml(search.method || "")}</p>
+    ${rows ? `<table class="demand"><thead><tr><th>Topic</th><th>12-month views</th><th>Last month</th><th>Trend</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+    <h3 class="intel-h">What actually gets clicked</h3>
+    <ul class="click-list">${clicks}</ul>
+    <h3 class="intel-h">Ten fascinating topics</h3>
+    <div class="topic-grid">${topics}</div>`;
+  $("intel").querySelectorAll(".use-topic").forEach((btn) => {
+    btn.onclick = () => {
+      const idea = (data.topics || []).find((t) => String(t.rank) === btn.dataset.rank);
+      if (idea) applyTopic(idea);
+    };
+  });
+}
 
 // ------------------------------------------------------------------ generate
 
@@ -247,7 +347,8 @@ $("render-btn").onclick = async () => {
         voice: $("voice").value,
         captions: $("opt-captions").checked,
         music: $("opt-music").checked,
-        stock_video: true,
+        stock_video: $("image-engine").value !== "paid",
+        image_engine: $("image-engine").value,
       }),
     });
     startPolling(current.id);

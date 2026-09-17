@@ -38,8 +38,13 @@ def acquire_scene_visual(
     project_dir: Path,
     prefer_stock_video: bool = True,
     retries: int = 3,
+    image_engine: str = "auto",
 ) -> Dict[str, str]:
-    """Return {"kind": "video"|"image", "path": str(local path)}."""
+    """Return {"kind": "video"|"image", "path": str(local path)}.
+
+    image_engine: "auto" (paid when a key is set, else free), "paid" (require
+    the configured image API — raise instead of downgrading), or "free".
+    """
     images_dir = project_dir / "images"
     clips_dir = project_dir / "clips"
     images_dir.mkdir(parents=True, exist_ok=True)
@@ -72,7 +77,13 @@ def acquire_scene_visual(
         return {"kind": "image", "path": str(image)}
     prompt = str(scene.get("image_prompt") or scene.get("narration") or "")
 
-    if _paid_image(prompt, image):
+    if image_engine == "paid":
+        if not _paid_image(prompt, image, required=True):
+            raise VisualError(
+                f"Scene {scene_id}: paid image API returned no image"
+            )
+        return {"kind": "image", "path": str(image)}
+    if image_engine != "free" and _paid_image(prompt, image):
         return {"kind": "image", "path": str(image)}
 
     for attempt in range(retries):
@@ -177,8 +188,8 @@ def _strip_borders(img: Image.Image, max_frac: float = 0.14) -> Image.Image:
     return img
 
 
-def generate_thumbnail(prompt: str, dest: Path) -> Path:
-    if _paid_image(prompt, dest):
+def generate_thumbnail(prompt: str, dest: Path, image_engine: str = "auto") -> Path:
+    if image_engine != "free" and _paid_image(prompt, dest, required=image_engine == "paid"):
         return dest
     seed = int(hashlib.sha1(prompt.encode()).hexdigest()[:6], 16)
     return generate_free_image(prompt, dest, seed=seed)
@@ -187,21 +198,32 @@ def generate_thumbnail(prompt: str, dest: Path) -> Path:
 _paid_disabled = False
 
 
-def _paid_image(prompt: str, dest: Path) -> bool:
+def _paid_image(prompt: str, dest: Path, required: bool = False) -> bool:
     """Use the configured paid image API (DALL·E 3 / gpt-image-1) when a key is
-    set; fall through to the free tier on any failure. After the first failure
-    (e.g. the LLM key is not an image-capable key), stop retrying the paid API
-    for this process so a long render doesn't burn a failing call per scene."""
+    set. In auto mode a failure falls through to the free tier — and after the
+    first failure (e.g. the LLM key is not an image-capable key) the paid API is
+    skipped for the rest of this process so a long render doesn't burn a failing
+    call per scene. With required=True a failure raises instead of downgrading.
+    """
     global _paid_disabled
     from app.images import ImageClient, ImageError
 
     client = ImageClient()
-    if _paid_disabled or not client.enabled:
+    if not client.enabled:
+        if required:
+            raise VisualError(
+                "Paid image engine selected, but no image key is configured. "
+                "Set IMAGE_API_KEY (or use an OpenAI LLM_API_KEY) in .env."
+            )
+        return False
+    if _paid_disabled and not required:
         return False
     try:
         client.generate(prompt, dest)
         return dest.exists() and dest.stat().st_size > 5000
     except ImageError as exc:
+        if required:
+            raise VisualError(f"Paid image API failed: {exc}") from exc
         _paid_disabled = True
         logger.warning(
             "Paid image API failed (%s) — using the free tier for the rest of this run",
