@@ -1,10 +1,11 @@
-"""Free, copyright-safe visuals for every scene.
+"""Copyright-safe visuals for every scene.
 
 Priority per scene:
 1. An image the user already generated (paid API) — reuse, never re-bill.
 2. Free stock video (Pexels / Pixabay, free API keys, CC0-style licenses).
-3. Free AI image generation via Pollinations (no key, no cost).
-4. Offline cinematic title card rendered locally with Pillow (always works).
+3. Paid image API (DALL·E 3 / gpt-image-1) when a key is configured.
+4. Free AI image generation via Pollinations (no key, no cost).
+5. Offline cinematic title card rendered locally with Pillow (always works).
 """
 from __future__ import annotations
 
@@ -70,6 +71,10 @@ def acquire_scene_visual(
     if image.exists():
         return {"kind": "image", "path": str(image)}
     prompt = str(scene.get("image_prompt") or scene.get("narration") or "")
+
+    if _paid_image(prompt, image):
+        return {"kind": "image", "path": str(image)}
+
     for attempt in range(retries):
         try:
             generate_free_image(prompt, image, seed=scene_id * 101 + attempt)
@@ -173,8 +178,36 @@ def _strip_borders(img: Image.Image, max_frac: float = 0.14) -> Image.Image:
 
 
 def generate_thumbnail(prompt: str, dest: Path) -> Path:
+    if _paid_image(prompt, dest):
+        return dest
     seed = int(hashlib.sha1(prompt.encode()).hexdigest()[:6], 16)
     return generate_free_image(prompt, dest, seed=seed)
+
+
+_paid_disabled = False
+
+
+def _paid_image(prompt: str, dest: Path) -> bool:
+    """Use the configured paid image API (DALL·E 3 / gpt-image-1) when a key is
+    set; fall through to the free tier on any failure. After the first failure
+    (e.g. the LLM key is not an image-capable key), stop retrying the paid API
+    for this process so a long render doesn't burn a failing call per scene."""
+    global _paid_disabled
+    from app.images import ImageClient, ImageError
+
+    client = ImageClient()
+    if _paid_disabled or not client.enabled:
+        return False
+    try:
+        client.generate(prompt, dest)
+        return dest.exists() and dest.stat().st_size > 5000
+    except ImageError as exc:
+        _paid_disabled = True
+        logger.warning(
+            "Paid image API failed (%s) — using the free tier for the rest of this run",
+            exc,
+        )
+        return False
 
 
 def stock_query(scene: Dict[str, Any]) -> str:

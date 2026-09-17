@@ -47,12 +47,15 @@ Open [http://127.0.0.1:8787](http://127.0.0.1:8787).
   renders end to end without any LLM key.
 - **LLM key:** unlock topic research and new scripts.
 
-## Free visuals, in priority order
+## Visuals, in priority order
 
 1. Images you already generated with a paid key are reused, never re-billed.
 2. `PEXELS_API_KEY` / `PIXABAY_API_KEY` (free keys) → real stock footage per scene.
-3. Pollinations.ai (no key at all) → cinematic AI stills with Ken Burns motion.
-4. Offline title cards rendered locally → the pipeline never blocks on a network.
+3. Paid image API (DALL·E 3 / `gpt-image-1`) if `IMAGE_API_KEY` is set — or if
+   your `LLM_API_KEY` is an OpenAI key, it is reused automatically. Note:
+   Claude/Opus keys cannot generate images; any failure falls back to the free tier.
+4. Pollinations.ai (no key at all) → cinematic AI stills with Ken Burns motion.
+5. Offline title cards rendered locally → the pipeline never blocks on a network.
 
 ## Music (optional)
 
