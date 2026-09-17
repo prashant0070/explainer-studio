@@ -18,6 +18,7 @@ from app.render import RenderBusy, render_status, start_render
 from app.research import ResearchError, notes_from_research, research_topic, suggest_topics
 from app.intel import analyze_niche
 from app.store import export_zip, image_path, list_projects, load_project, project_dir, save_project
+from app.slate import load_slate, mark_project, merge_topics, reset_slate, update_item
 from app.tts import VOICE_MENU
 from app.visuals import VisualError, generate_free_image
 
@@ -33,12 +34,23 @@ class GenerateRequest(BaseModel):
     angle: str = ""
     notes: str = ""
     research: bool = True
+    slate_id: str = ""
 
 
 class IntelRequest(BaseModel):
     niche: str = ""
     count: int = 10
     lane: str = ""
+
+
+class SlatePatch(BaseModel):
+    status: str = ""
+    notes: str = ""
+
+
+class SlateMergeRequest(BaseModel):
+    lane: str = "science"
+    topics: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ImageRequest(BaseModel):
@@ -86,7 +98,38 @@ def get_project(project_id: str) -> Dict[str, Any]:
     return project
 
 
-@app.post("/api/research/intel")
+@app.get("/api/slate")
+def get_slate() -> Dict[str, Any]:
+    return load_slate()
+
+
+@app.post("/api/slate/reset")
+def slate_reset() -> Dict[str, Any]:
+    return reset_slate()
+
+
+@app.post("/api/slate/merge")
+def slate_merge(req: SlateMergeRequest) -> Dict[str, Any]:
+    if req.topics:
+        return merge_topics(req.topics, req.lane)
+    briefing = analyze_niche("", 10, lane=req.lane)
+    return merge_topics(briefing.get("topics") or [], req.lane or briefing.get("lane") or "science")
+
+
+@app.patch("/api/slate/{item_id}")
+def slate_patch(item_id: str, req: SlatePatch) -> Dict[str, Any]:
+    allowed = {"queued", "in_progress", "done"}
+    fields: Dict[str, Any] = {}
+    if req.status:
+        if req.status not in allowed:
+            raise HTTPException(400, "Status must be queued, in_progress, or done")
+        fields["status"] = req.status
+    if req.notes:
+        fields["notes"] = req.notes
+    try:
+        return update_item(item_id, **fields)
+    except KeyError:
+        raise HTTPException(404, "Queue item not found")
 def research_intel(req: IntelRequest) -> Dict[str, Any]:
     try:
         return analyze_niche(req.niche, max(5, min(req.count, 12)), lane=req.lane)
@@ -125,7 +168,12 @@ def generate(req: GenerateRequest) -> Dict[str, Any]:
         raise HTTPException(400, str(exc)) from exc
     if research:
         pack["research"] = research
-    return save_project(pack)
+    if req.slate_id:
+        pack["slate_id"] = req.slate_id
+    saved = save_project(pack)
+    if req.slate_id:
+        mark_project(req.slate_id, saved["id"], status="in_progress")
+    return saved
 
 
 @app.post("/api/projects/{project_id}/images")

@@ -19,11 +19,11 @@
     <section class="panel form-panel">
       <h2>Niche intel</h2>
       <label>Niche / channel description
-        <textarea id="niche" rows="3" placeholder="Cinematic story explainers — entire myths and disasters, hook-first, cut every few seconds">Cinematic story explainers like "The ENTIRE Story of X Explained" plus Dark Vault investigations — one causal hook, painted scenes, 8–15 minutes</textarea>
+        <textarea id="niche" rows="3" placeholder="Cinematic story explainers — entire myths and disasters, hook-first, cut every few seconds">Science and tech told as cinematic story explainers — the ENTIRE story of one discovery, disaster, or machine. Same art form as Icarus: one causal hook, painted 16:9 stills, cut every 8–18 seconds. Not a lecture. Not Kurzgesagt blobs.</textarea>
       </label>
       <div class="row">
-        <button type="button" id="lane-myth" class="ghost lane-btn active">Mythic epics</button>
-        <button type="button" id="lane-science" class="ghost lane-btn">Science &amp; tech</button>
+        <button type="button" id="lane-myth" class="ghost lane-btn">Mythic epics</button>
+        <button type="button" id="lane-science" class="ghost lane-btn active">Science &amp; tech</button>
       </div>
       <div class="actions">
         <button id="intel-btn" class="primary">Analyze the niche</button>
@@ -63,14 +63,17 @@
         <button id="demo" class="ghost">Load Icarus demo</button>
       </div>
       <p class="hint" id="form-error"></p>
+      <h3>Production queue</h3>
+      <p class="meta" id="queue-meta"></p>
+      <ul id="queue" class="recent queue-list"></ul>
       <h3>Recent</h3>
       <ul id="recent" class="recent"></ul>
     </section>
 
     <section class="panel script-panel" id="workspace">
       <div class="empty" id="empty">
-        Hit <strong>Analyze the niche</strong> to see what top channels are doing,
-        what went viral, what people are searching, and 10 topics ranked for this format.
+        Hit <strong>Science &amp; tech</strong> or open the production queue.
+        All ten science topics (and the mythic ten) are saved — pick one and generate.
       </div>
       <div id="intel" hidden></div>
       <div id="pack" hidden>

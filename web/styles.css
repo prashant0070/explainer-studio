@@ -177,6 +177,14 @@ pre {
 .hook-mini { font-size: 17px; line-height: 1.45; margin: 0 0 12px; }
 .topic-card .prompt { margin: 0 0 8px; }
 .lane-btn.active { border-color: var(--accent); color: var(--accent); }
+.queue-list { max-height: 420px; overflow: auto; }
+.queue-lane { color: var(--accent); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin: 12px 0 6px; list-style: none; }
+.queue-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.queue-item.active { border-color: var(--accent); }
+.queue-status { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.queue-status.queued { color: var(--muted); }
+.queue-status.in_progress { color: var(--accent); }
+.queue-status.done { color: #7fb069; }
 
 @media (max-width: 960px) {
   main { grid-template-columns: 1fr; }

@@ -2,7 +2,8 @@ const $ = (id) => document.getElementById(id);
 
 let current = null;
 let pollTimer = null;
-let currentLane = "myth";
+let currentLane = "science";
+let selectedSlateId = "";
 
 const NICHE_MYTH =
   'Cinematic story explainers like "The ENTIRE Story of X Explained" plus Dark Vault investigations — one causal hook, painted scenes, 8–15 minutes';
@@ -200,6 +201,11 @@ $("intel-btn").onclick = async () => {
     })).json();
     renderIntel(data);
     fillIdeaList(data.topics || []);
+    await api("/api/slate/merge", {
+      method: "POST",
+      body: JSON.stringify({ lane: data.lane || currentLane, topics: data.topics || [] }),
+    });
+    await loadQueue();
   } catch (err) {
     $("form-error").textContent = err.message;
   } finally {
@@ -243,12 +249,14 @@ function fillIdeaList(ideas) {
 }
 
 function applyTopic(idea) {
+  selectedSlateId = idea.id || "";
   $("topic").value = idea.topic || "";
   if (idea.style === "dark_vault") $("style").value = "dark_vault";
   else if (idea.style === "science") $("style").value = "science";
   else $("style").value = "odyssey";
   $("angle").value = idea.hook || "";
   $("topic").scrollIntoView({ behavior: "smooth", block: "center" });
+  highlightQueue();
 }
 
 function renderIntel(data) {
@@ -319,7 +327,10 @@ function renderIntel(data) {
   $("intel").querySelectorAll(".use-topic").forEach((btn) => {
     btn.onclick = () => {
       const idea = (data.topics || []).find((t) => String(t.rank) === btn.dataset.rank);
-      if (idea) applyTopic(idea);
+      if (idea) {
+        const queued = queueItems.find((q) => q.title === idea.title || q.topic === idea.topic);
+        applyTopic(queued || idea);
+      }
     };
   });
 }
@@ -340,10 +351,12 @@ $("generate").onclick = async () => {
         angle: $("angle").value,
         notes: $("notes").value,
         research: $("auto-research").checked,
+        slate_id: selectedSlateId,
       }),
     })).json();
     renderPack(project);
     await loadRecent();
+    await loadQueue();
   } catch (err) {
     $("form-error").textContent = err.message;
   } finally {
@@ -390,6 +403,7 @@ function startPolling(projectId) {
         if (status.state === "done") {
           const project = await (await api(`/api/projects/${projectId}`)).json();
           renderPack(project);
+          await loadQueue();
         } else {
           $("form-error").textContent = status.message || "Render failed";
         }
@@ -468,6 +482,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
 
 loadHealth();
 loadRecent();
+loadQueue();
 
 $("lane-myth").onclick = () => setLane("myth");
 $("lane-science").onclick = () => setLane("science");
@@ -477,4 +492,55 @@ function setLane(lane) {
   $("lane-myth").classList.toggle("active", lane === "myth");
   $("lane-science").classList.toggle("active", lane === "science");
   $("niche").value = lane === "science" ? NICHE_SCIENCE : NICHE_MYTH;
+  highlightQueue();
+}
+
+let queueItems = [];
+
+async function loadQueue() {
+  try {
+    const data = await (await api("/api/slate")).json();
+    queueItems = data.items || [];
+    renderQueue();
+  } catch {
+    $("queue-meta").textContent = "Queue unavailable";
+  }
+}
+
+function renderQueue() {
+  const list = $("queue");
+  list.innerHTML = "";
+  const queued = queueItems.filter((i) => i.status === "queued").length;
+  const doing = queueItems.filter((i) => i.status === "in_progress").length;
+  const done = queueItems.filter((i) => i.status === "done").length;
+  $("queue-meta").textContent = `${queueItems.length} saved · ${queued} queued · ${doing} in progress · ${done} done`;
+  let lastLane = "";
+  for (const item of queueItems) {
+    if (item.lane !== lastLane) {
+      lastLane = item.lane;
+      const heading = document.createElement("li");
+      heading.className = "queue-lane";
+      heading.textContent = item.lane === "science" ? "Science & tech" : "Mythic epics";
+      list.appendChild(heading);
+    }
+    const li = document.createElement("li");
+    const active = item.id === selectedSlateId ? " active" : "";
+    li.innerHTML = `<button class="ghost queue-item${active}" data-id="${item.id}">
+      <span class="queue-status ${item.status}">${item.status.replace("_", " ")}</span>
+      ${escapeHtml(item.title)}
+    </button>`;
+    li.querySelector("button").onclick = () => {
+      if (item.project_id && item.status !== "queued") {
+        openProject(item.project_id);
+      }
+      applyTopic(item);
+    };
+    list.appendChild(li);
+  }
+}
+
+function highlightQueue() {
+  document.querySelectorAll(".queue-item").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.id === selectedSlateId);
+  });
 }

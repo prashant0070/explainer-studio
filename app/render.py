@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from app import qc as qc_mod
 from app.store import load_project, project_dir, save_project
+from app.slate import mark_done_for_project
 from app.subtitles import build_captions
 from app.tts import synthesize_scene, voice_for_style
 from app.video import TAIL_PAD, build_scene_clip, concat_scenes, finalize
@@ -202,6 +203,7 @@ def _run(project_id: str, options: Dict[str, Any]) -> None:
     project["qc"] = report
     project["rendered_at"] = datetime.now(timezone.utc).isoformat()
     save_project(project)
+    mark_done_for_project(project_id)
 
     _write_status(
         project_id, "done", 1.0,

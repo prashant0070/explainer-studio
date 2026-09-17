@@ -68,7 +68,9 @@ clean voice-only master.
 
 ## Export
 
-Each project saves under `data/projects/<id>/`. **Export zip** includes:
+Each project saves under `data/projects/<id>/`. The production queue lives in
+`data/slate.json` — all 10 science topics and 10 mythic topics, status queued /
+in progress / done, so we work through them one by one.
 
 - `final.mp4` — the finished video
 - `qc.json` — the quality report
