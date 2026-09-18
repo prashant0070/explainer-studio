@@ -83,6 +83,15 @@ def export_zip(project: Dict[str, Any]) -> Path:
             for file in images.iterdir():
                 if file.is_file():
                     zf.write(file, f"images/{file.name}")
+        for extra in ("final.mp4", "qc.json", "captions.ass"):
+            path = folder / extra
+            if path.exists():
+                zf.write(path, extra)
+        audio = folder / "audio"
+        if audio.exists():
+            for file in sorted(audio.iterdir()):
+                if file.is_file():
+                    zf.write(file, f"audio/{file.name}")
     return zip_path
 
 

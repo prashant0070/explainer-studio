@@ -1,6 +1,14 @@
 const $ = (id) => document.getElementById(id);
 
 let current = null;
+let pollTimer = null;
+let currentLane = "science";
+let selectedSlateId = "";
+
+const NICHE_MYTH =
+  'Cinematic story explainers like "The ENTIRE Story of X Explained" plus Dark Vault investigations — one causal hook, painted scenes, 8–15 minutes';
+const NICHE_SCIENCE =
+  "Science and tech told as cinematic story explainers — the ENTIRE story of one discovery, disaster, or machine. Same art form as Icarus: one causal hook, painted 16:9 stills, cut every 8–18 seconds. Not a lecture. Not Kurzgesagt blobs.";
 
 async function api(path, options) {
   const res = await fetch(path, {
@@ -24,8 +32,22 @@ async function loadHealth() {
   try {
     const data = await (await api("/api/health")).json();
     const llm = data.llm_ready ? "LLM ready" : "Add LLM_API_KEY to generate scripts";
-    const images = data.images_ready ? "images ready" : "no image key";
-    $("status").textContent = `${llm} · ${images} · ${data.model}`;
+    const stock = data.stock_ready ? "stock footage on" : "free AI images";
+    $("status").textContent = `${llm} · ${stock} · free voiceover · ${data.model}`;
+    const paidOpt = document.querySelector('#image-engine option[value="paid"]');
+    if (paidOpt) {
+      paidOpt.textContent = data.images_ready
+        ? "Paid — DALL·E, same as image packs (key detected)"
+        : "Paid — DALL·E, same as image packs (no key set)";
+    }
+    const voiceSel = $("voice");
+    voiceSel.innerHTML = "";
+    for (const voice of data.voices || []) {
+      const opt = document.createElement("option");
+      opt.value = voice.id;
+      opt.textContent = voice.label;
+      voiceSel.appendChild(opt);
+    }
   } catch {
     $("status").textContent = "Server not reachable";
   }
@@ -52,20 +74,68 @@ async function openProject(id) {
   $("form-error").textContent = "";
   const project = await (await api(`/api/projects/${id}`)).json();
   renderPack(project);
+  resumeRenderIfRunning(id);
 }
 
 function renderPack(project) {
   current = project;
   $("empty").hidden = true;
+  $("intel").hidden = true;
   $("pack").hidden = false;
-  $("pack-style").textContent = project.style === "dark_vault" ? "Dark Vault" : "Odyssey explainer";
+  $("pack-style").textContent =
+    project.style === "dark_vault"
+      ? "Dark Vault"
+      : project.style === "science"
+        ? "Science & tech"
+        : "Odyssey explainer";
   $("pack-title").textContent = (project.titles && project.titles[0]) || project.topic;
   $("pack-meta").textContent = `${project.scenes.length} scenes · ${project.word_count} words · ~${Math.round(project.runtime_seconds / 60)} min`;
   $("pack-hook").textContent = project.hook;
   $("pack-thesis").textContent = project.thesis ? `Thesis: ${project.thesis}` : "";
   $("narration").textContent = project.full_narration;
+  $("research").textContent = researchBlock(project);
   $("youtube").textContent = youtubeBlock(project);
   renderScenes(project);
+  renderVideo(project);
+}
+
+function renderVideo(project) {
+  const wrap = $("video-wrap");
+  if (project.video_path) {
+    wrap.hidden = false;
+    const player = $("player");
+    const src = `${project.video_path}?t=${Date.now()}`;
+    if (!player.src.includes(project.video_path)) player.src = src;
+    $("qc-report").innerHTML = qcBlock(project.qc);
+  } else {
+    wrap.hidden = true;
+  }
+}
+
+function qcBlock(qc) {
+  if (!qc) return "";
+  const rows = (qc.checks || [])
+    .map(
+      (c) =>
+        `<li class="qc-${c.status}"><strong>${escapeHtml(c.name)}</strong> — ${escapeHtml(c.detail)}</li>`
+    )
+    .join("");
+  const review = qc.llm_review
+    ? `<p class="qc-review">${escapeHtml(qc.llm_review)}</p>`
+    : "";
+  return `<p class="qc-verdict qc-${qc.verdict}">QC ${qc.verdict.toUpperCase()} · ${escapeHtml(qc.summary || "")}</p><ul>${rows}</ul>${review}`;
+}
+
+function researchBlock(project) {
+  const r = project.research;
+  if (!r) return "No auto-research stored for this project.";
+  const parts = [];
+  if (r.summary) parts.push(`OVERVIEW\n${r.summary}`);
+  if (r.facts && r.facts.length) parts.push(`VERIFIED FACTS\n${r.facts.map((f) => `- ${f}`).join("\n")}`);
+  if (r.timeline && r.timeline.length) parts.push(`TIMELINE\n${r.timeline.map((t) => `- ${t}`).join("\n")}`);
+  if (r.disputed && r.disputed.length) parts.push(`DISPUTED\n${r.disputed.map((d) => `- ${d}`).join("\n")}`);
+  if (r.sources && r.sources.length) parts.push(`SOURCES\n${r.sources.map((s) => `- ${s.title}: ${s.url}`).join("\n")}`);
+  return parts.join("\n\n");
 }
 
 function renderScenes(project) {
@@ -118,10 +188,159 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+// ------------------------------------------------------------ niche intel
+
+$("intel-btn").onclick = async () => {
+  $("form-error").textContent = "";
+  $("intel-btn").disabled = true;
+  $("intel-btn").textContent = "Reading channels + search…";
+  try {
+    const data = await (await api("/api/research/intel", {
+      method: "POST",
+      body: JSON.stringify({ niche: $("niche").value, count: 10, lane: currentLane }),
+    })).json();
+    renderIntel(data);
+    fillIdeaList(data.topics || []);
+    await api("/api/slate/merge", {
+      method: "POST",
+      body: JSON.stringify({ lane: data.lane || currentLane, topics: data.topics || [] }),
+    });
+    await loadQueue();
+  } catch (err) {
+    $("form-error").textContent = err.message;
+  } finally {
+    $("intel-btn").disabled = false;
+    $("intel-btn").textContent = "Analyze the niche";
+  }
+};
+
+$("ideas-btn").onclick = async () => {
+  $("form-error").textContent = "";
+  const niche = $("niche").value.trim();
+  if (!niche) {
+    $("form-error").textContent = "Describe your niche first";
+    return;
+  }
+  $("ideas-btn").disabled = true;
+  $("ideas-btn").textContent = "Researching…";
+  try {
+    const data = await (await api("/api/research/ideas", {
+      method: "POST",
+      body: JSON.stringify({ niche, count: 6 }),
+    })).json();
+    fillIdeaList(data.ideas || []);
+  } catch (err) {
+    $("form-error").textContent = err.message;
+  } finally {
+    $("ideas-btn").disabled = false;
+    $("ideas-btn").textContent = "Quick ideas only";
+  }
+};
+
+function fillIdeaList(ideas) {
+  const list = $("ideas");
+  list.innerHTML = "";
+  for (const idea of ideas) {
+    const item = document.createElement("li");
+    item.innerHTML = `<button class="ghost">${escapeHtml(idea.title || idea.topic)}</button>`;
+    item.querySelector("button").onclick = () => applyTopic(idea);
+    list.appendChild(item);
+  }
+}
+
+function applyTopic(idea) {
+  selectedSlateId = idea.id || "";
+  $("topic").value = idea.topic || "";
+  if (idea.style === "dark_vault") $("style").value = "dark_vault";
+  else if (idea.style === "science") $("style").value = "science";
+  else $("style").value = "odyssey";
+  $("angle").value = idea.hook || "";
+  $("topic").scrollIntoView({ behavior: "smooth", block: "center" });
+  highlightQueue();
+}
+
+function renderIntel(data) {
+  $("empty").hidden = true;
+  $("pack").hidden = true;
+  $("intel").hidden = false;
+  const search = data.search || {};
+  const rows = (search.rows || [])
+    .map(
+      (r) =>
+        `<tr><td>${escapeHtml(r.topic)}</td><td>${Number(r.views_12m).toLocaleString()}</td>` +
+        `<td>${Number(r.last_month).toLocaleString()}</td>` +
+        `<td class="trend-${r.trend}">${escapeHtml(r.trend)}</td></tr>`
+    )
+    .join("");
+  const patterns = (data.patterns || [])
+    .map(
+      (p) =>
+        `<article class="intel-card">
+          <p class="scene-kicker">${escapeHtml(p.channel)}</p>
+          <p>${escapeHtml(p.pattern)}</p>
+          <p class="prompt">${escapeHtml(p.proof)}</p>
+          <p class="prompt">${escapeHtml(p.takeaway)}</p>
+        </article>`
+    )
+    .join("");
+  const clicks = (data.what_clicks || [])
+    .map((c) => `<li>${escapeHtml(c)}</li>`)
+    .join("");
+  const topics = (data.topics || [])
+    .map(
+      (t) =>
+        `<article class="topic-card">
+          <p class="scene-kicker">#${t.rank} · ${
+            t.style === "dark_vault"
+              ? "Dark Vault"
+              : t.style === "science"
+                ? "Science & tech"
+                : "Odyssey explainer"
+          }</p>
+          <h3>${escapeHtml(t.title || t.topic)}</h3>
+          <p class="hook-mini">${escapeHtml(t.hook)}</p>
+          <p class="prompt"><strong>Demand.</strong> ${escapeHtml(t.demand)}</p>
+          <p class="prompt"><strong>Why it fascinates.</strong> ${escapeHtml(t.why)}</p>
+          <p class="prompt"><strong>Gap.</strong> ${escapeHtml(t.gap)}</p>
+          <button class="primary use-topic" data-rank="${t.rank}">Use this topic</button>
+        </article>`
+    )
+    .join("");
+  $("intel").innerHTML = `
+    <div class="pack-head">
+      <div>
+        <p class="eyebrow">Niche intel</p>
+        <h2>What is working, what people search, ten topics</h2>
+        <p class="meta">${escapeHtml(data.niche || "")}</p>
+      </div>
+    </div>
+    <p class="hook">${escapeHtml(search.headline || "")}</p>
+    <h3 class="intel-h">What top channels are doing</h3>
+    <div class="intel-grid">${patterns}</div>
+    <h3 class="intel-h">What people look up</h3>
+    <p class="thesis">${escapeHtml(search.method || "")}</p>
+    ${rows ? `<table class="demand"><thead><tr><th>Topic</th><th>12-month views</th><th>Last month</th><th>Trend</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+    <h3 class="intel-h">What actually gets clicked</h3>
+    <ul class="click-list">${clicks}</ul>
+    <h3 class="intel-h">Ten fascinating topics</h3>
+    <div class="topic-grid">${topics}</div>`;
+  $("intel").querySelectorAll(".use-topic").forEach((btn) => {
+    btn.onclick = () => {
+      const idea = (data.topics || []).find((t) => String(t.rank) === btn.dataset.rank);
+      if (idea) {
+        const queued = queueItems.find((q) => q.title === idea.title || q.topic === idea.topic);
+        applyTopic(queued || idea);
+      }
+    };
+  });
+}
+
+// ------------------------------------------------------------------ generate
+
 $("generate").onclick = async () => {
   $("form-error").textContent = "";
   $("generate").disabled = true;
-  $("generate").textContent = "Writing…";
+  $("generate").textContent = $("auto-research").checked ? "Researching + writing…" : "Writing…";
   try {
     const project = await (await api("/api/generate", {
       method: "POST",
@@ -131,10 +350,13 @@ $("generate").onclick = async () => {
         duration: $("duration").value,
         angle: $("angle").value,
         notes: $("notes").value,
+        research: $("auto-research").checked,
+        slate_id: selectedSlateId,
       }),
     })).json();
     renderPack(project);
     await loadRecent();
+    await loadQueue();
   } catch (err) {
     $("form-error").textContent = err.message;
   } finally {
@@ -144,6 +366,81 @@ $("generate").onclick = async () => {
 };
 
 $("demo").onclick = () => openProject("demo-icarus");
+
+// -------------------------------------------------------------------- render
+
+$("render-btn").onclick = async () => {
+  if (!current) return;
+  $("form-error").textContent = "";
+  try {
+    await api(`/api/projects/${current.id}/render`, {
+      method: "POST",
+      body: JSON.stringify({
+        voice: $("voice").value,
+        captions: $("opt-captions").checked,
+        music: $("opt-music").checked,
+        stock_video: $("image-engine").value !== "paid",
+        image_engine: $("image-engine").value,
+      }),
+    });
+    startPolling(current.id);
+  } catch (err) {
+    $("form-error").textContent = err.message;
+  }
+};
+
+function startPolling(projectId) {
+  stopPolling();
+  $("render-progress").hidden = false;
+  $("render-btn").disabled = true;
+  pollTimer = setInterval(async () => {
+    try {
+      const status = await (await api(`/api/projects/${projectId}/render/status`)).json();
+      updateProgress(status);
+      if (status.state === "done" || status.state === "error") {
+        stopPolling();
+        $("render-btn").disabled = false;
+        if (status.state === "done") {
+          const project = await (await api(`/api/projects/${projectId}`)).json();
+          renderPack(project);
+          await loadQueue();
+        } else {
+          $("form-error").textContent = status.message || "Render failed";
+        }
+      }
+    } catch {
+      /* transient poll failure — keep trying */
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+function updateProgress(status) {
+  const pct = Math.round((status.overall || 0) * 100);
+  $("bar-fill").style.width = `${pct}%`;
+  $("render-message").textContent = `${pct}% · ${status.stage || ""} — ${status.message || ""}`;
+}
+
+async function resumeRenderIfRunning(projectId) {
+  try {
+    const status = await (await api(`/api/projects/${projectId}/render/status`)).json();
+    if (status.state === "running") {
+      startPolling(projectId);
+      updateProgress(status);
+    } else {
+      $("render-progress").hidden = status.state !== "done";
+      if (status.state === "done") updateProgress(status);
+    }
+  } catch {
+    /* no status yet */
+  }
+}
+
+// -------------------------------------------------------------------- images
 
 $("make-images").onclick = async () => {
   if (!current) return;
@@ -178,9 +475,72 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     btn.classList.add("active");
     $("tab-scenes").hidden = btn.dataset.tab !== "scenes";
     $("tab-narration").hidden = btn.dataset.tab !== "narration";
+    $("tab-research").hidden = btn.dataset.tab !== "research";
     $("tab-youtube").hidden = btn.dataset.tab !== "youtube";
   };
 });
 
 loadHealth();
 loadRecent();
+loadQueue();
+
+$("lane-myth").onclick = () => setLane("myth");
+$("lane-science").onclick = () => setLane("science");
+
+function setLane(lane) {
+  currentLane = lane;
+  $("lane-myth").classList.toggle("active", lane === "myth");
+  $("lane-science").classList.toggle("active", lane === "science");
+  $("niche").value = lane === "science" ? NICHE_SCIENCE : NICHE_MYTH;
+  highlightQueue();
+}
+
+let queueItems = [];
+
+async function loadQueue() {
+  try {
+    const data = await (await api("/api/slate")).json();
+    queueItems = data.items || [];
+    renderQueue();
+  } catch {
+    $("queue-meta").textContent = "Queue unavailable";
+  }
+}
+
+function renderQueue() {
+  const list = $("queue");
+  list.innerHTML = "";
+  const queued = queueItems.filter((i) => i.status === "queued").length;
+  const doing = queueItems.filter((i) => i.status === "in_progress").length;
+  const done = queueItems.filter((i) => i.status === "done").length;
+  $("queue-meta").textContent = `${queueItems.length} saved · ${queued} queued · ${doing} in progress · ${done} done`;
+  let lastLane = "";
+  for (const item of queueItems) {
+    if (item.lane !== lastLane) {
+      lastLane = item.lane;
+      const heading = document.createElement("li");
+      heading.className = "queue-lane";
+      heading.textContent = item.lane === "science" ? "Science & tech" : "Mythic epics";
+      list.appendChild(heading);
+    }
+    const li = document.createElement("li");
+    const active = item.id === selectedSlateId ? " active" : "";
+    li.innerHTML = `<button class="ghost queue-item${active}" data-id="${item.id}">
+      <span class="queue-status ${item.status}">${item.status.replace("_", " ")}</span>
+      ${escapeHtml(item.title)}
+    </button>`;
+    li.querySelector("button").onclick = () => {
+      if (item.project_id && item.status !== "queued") {
+        openProject(item.project_id);
+      }
+      applyTopic(item);
+    };
+    list.appendChild(li);
+  }
+}
+
+function highlightQueue() {
+  document.querySelectorAll(".queue-item").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.id === selectedSlateId);
+  });
+}
