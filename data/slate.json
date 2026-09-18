@@ -19,7 +19,7 @@
       "id": "sci-02-they-held-a-bomb-core-apart-with-a-screw",
       "lane": "science",
       "rank": 2,
-      "status": "queued",
+      "status": "in_progress",
       "topic": "The Demon Core",
       "title": "They Held a Bomb Core Apart With a Screwdriver",
       "hook": "In 1946, Louis Slotin was showing visiting scientists how close a plutonium pit could get to going critical. The only thing between the two beryllium hemispheres was a flathead screwdriver. It slipped.",
@@ -27,7 +27,7 @@
       "demand": "Demon Core is a reliable curiosity query (nuclear, Manhattan, 'third eye' stories). Wendigoon-adjacent audience already watches it. Short, complete, viscerally visual \u2014 the screwdriver, the blue flash, the hospital.",
       "why": "Exactly the Icarus shape: one rule, one demonstration, one night. 8\u201312 minutes, no padding.",
       "gap": "Reddit lore and 40-minute documentaries. No Odyssey-voiced 12-minute painted version.",
-      "project_id": null,
+      "project_id": "3f710b18eeae",
       "notes": ""
     },
     {
@@ -301,6 +301,6 @@
       "notes": ""
     }
   ],
-  "updated_at": "2026-09-17T07:57:45.985573+00:00",
+  "updated_at": "2026-09-18T11:13:47.027141+00:00",
   "name": "Explainer Studio production queue"
 }
