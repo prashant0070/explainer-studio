@@ -1,0 +1,12 @@
+{
+  "name": "Explainer Studio",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "web",
+      "command": ". .venv/bin/activate && exec uvicorn app.main:app --host 0.0.0.0 --port 8787"
+    }
+  ],
+  "ports": [8787]
+}
