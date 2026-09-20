@@ -97,6 +97,7 @@ function renderPack(project) {
   $("youtube").textContent = youtubeBlock(project);
   renderScenes(project);
   renderVideo(project);
+  renderVirality(project.virality);
 }
 
 function renderVideo(project) {
@@ -468,6 +469,75 @@ $("export").onclick = () => {
   if (!current) return;
   window.location.href = `/api/projects/${current.id}/export`;
 };
+
+$("virality-btn").onclick = async () => {
+  if (!current) return;
+  $("form-error").textContent = "";
+  $("virality-btn").disabled = true;
+  $("virality-btn").textContent = "Scoring…";
+  try {
+    const report = await (await api(`/api/projects/${current.id}/virality`)).json();
+    current.virality = report;
+    renderVirality(report);
+    $("virality-wrap").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (err) {
+    $("form-error").textContent = err.message;
+  } finally {
+    $("virality-btn").disabled = false;
+    $("virality-btn").textContent = "Will it go viral?";
+  }
+};
+
+function renderVirality(report) {
+  const wrap = $("virality-wrap");
+  if (!report) {
+    wrap.hidden = true;
+    wrap.innerHTML = "";
+    return;
+  }
+  wrap.hidden = false;
+  const factors = (report.factors || [])
+    .map((f) => {
+      const pct = Math.max(0, Math.min(100, f.score));
+      return `<li class="vir-factor vir-${f.status}">
+        <div class="vir-factor-head">
+          <span class="vir-factor-name">${escapeHtml(f.name)}</span>
+          <span class="vir-factor-score">${f.score}</span>
+        </div>
+        <div class="vir-track"><div class="vir-bar" style="width:${pct}%"></div></div>
+        <p class="vir-detail">${escapeHtml(f.detail)}</p>
+      </li>`;
+    })
+    .join("");
+  const titles = (report.title_scores || [])
+    .map(
+      (t, i) =>
+        `<li class="${i === 0 ? "vir-title-best" : ""}"><span class="vir-title-score">${t.score}</span> ${escapeHtml(t.title)}</li>`
+    )
+    .join("");
+  const tips = (report.suggestions || [])
+    .map((s) => `<li>${escapeHtml(s)}</li>`)
+    .join("");
+  const review = report.llm_review
+    ? `<p class="vir-review">${escapeHtml(report.llm_review)}</p>`
+    : "";
+  wrap.innerHTML = `
+    <div class="vir-head">
+      <div class="vir-gauge vir-${report.verdict}">
+        <span class="vir-num">${report.score}</span>
+        <span class="vir-out">/100</span>
+      </div>
+      <div class="vir-verdict">
+        <p class="eyebrow">Virality forecast</p>
+        <h3 class="vir-label vir-${report.verdict}">${escapeHtml(report.label)}</h3>
+        <p class="meta">${escapeHtml(report.summary || "")}</p>
+      </div>
+    </div>
+    <ul class="vir-factors">${factors}</ul>
+    ${titles ? `<h4 class="vir-sub">Title face-off — strongest first</h4><ul class="vir-titles">${titles}</ul>` : ""}
+    ${tips ? `<h4 class="vir-sub">Raise the score</h4><ul class="vir-tips">${tips}</ul>` : ""}
+    ${review}`;
+}
 
 document.querySelectorAll(".tabs button").forEach((btn) => {
   btn.onclick = () => {

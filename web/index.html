@@ -85,6 +85,7 @@
           </div>
           <div class="actions">
             <button id="render-btn" class="primary">Produce full video</button>
+            <button id="virality-btn" class="ghost">Will it go viral?</button>
             <button id="make-images" class="ghost">Generate 8 images</button>
             <button id="export" class="ghost">Export zip</button>
           </div>
@@ -109,6 +110,8 @@
           <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
           <p class="meta" id="render-message"></p>
         </div>
+
+        <div id="virality-wrap" class="virality" hidden></div>
 
         <div id="video-wrap" hidden>
           <video id="player" controls preload="metadata"></video>

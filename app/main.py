@@ -20,6 +20,7 @@ from app.intel import analyze_niche
 from app.store import export_zip, image_path, list_projects, load_project, project_dir, save_project
 from app.slate import load_slate, mark_project, merge_topics, reset_slate, update_item
 from app.tts import VOICE_MENU
+from app.virality import predict as predict_virality
 from app.visuals import VisualError, generate_free_image
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
@@ -246,6 +247,20 @@ def render_project(project_id: str, req: RenderRequest) -> Dict[str, Any]:
 @app.get("/api/projects/{project_id}/render/status")
 def get_render_status(project_id: str) -> Dict[str, Any]:
     return render_status(project_id)
+
+
+@app.get("/api/projects/{project_id}/virality")
+def project_virality(project_id: str) -> Dict[str, Any]:
+    project = load_project(project_id)
+    if not project:
+        if project_id == DEMO_PROJECT["id"]:
+            project = save_project(dict(DEMO_PROJECT))
+        else:
+            raise HTTPException(404, "Project not found")
+    report = predict_virality(project)
+    project["virality"] = report
+    save_project(project)
+    return report
 
 
 @app.get("/api/projects/{project_id}/video")
