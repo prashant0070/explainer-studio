@@ -382,6 +382,7 @@ $("render-btn").onclick = async () => {
         music: $("opt-music").checked,
         stock_video: $("image-engine").value !== "paid",
         image_engine: $("image-engine").value,
+        pace: $("pace").value,
       }),
     });
     startPolling(current.id);

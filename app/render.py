@@ -29,6 +29,10 @@ _ACTIVE: Dict[str, threading.Thread] = {}
 
 STAGES = ["narration", "visuals", "captions", "assembly", "master", "qc", "done"]
 
+# Narration pace -> edge-tts rate. "faster" is a gentle lift that stays natural;
+# "fastest" is punchier for high-energy explainers.
+PACE_RATES = {"normal": "+0%", "faster": "+15%", "fastest": "+28%"}
+
 
 class RenderBusy(RuntimeError):
     pass
@@ -101,6 +105,8 @@ def _run(project_id: str, options: Dict[str, Any]) -> None:
     limit = int(options.get("scene_limit") or 0)
     if limit > 0:
         scenes = scenes[:limit]
+    pace = str(options.get("pace") or "normal").lower()
+    rate = PACE_RATES.get(pace, "+0%")
 
     total = len(scenes)
     audio_dir = folder / "audio"
@@ -115,7 +121,7 @@ def _run(project_id: str, options: Dict[str, Any]) -> None:
             f"Voiceover {i + 1}/{total}: “{scene['narration'][:48]}…”",
         )
         audio = audio_dir / f"scene-{scene['id']:02d}.mp3"
-        result = synthesize_scene(scene["narration"], audio, voice=voice)
+        result = synthesize_scene(scene["narration"], audio, voice=voice, rate=rate)
         timeline.append(
             {
                 "scene_id": scene["id"],

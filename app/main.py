@@ -67,6 +67,7 @@ class RenderRequest(BaseModel):
     stock_video: bool = True
     image_engine: str = "auto"  # auto | paid | free
     scene_limit: int = 0
+    pace: str = "normal"  # normal | faster | fastest — narration speed
 
 
 @app.get("/api/health")
@@ -153,7 +154,7 @@ def research_ideas(req: IntelRequest) -> Dict[str, Any]:
 @app.post("/api/generate")
 def generate(req: GenerateRequest) -> Dict[str, Any]:
     if req.duration not in DURATION_TARGETS:
-        raise HTTPException(400, "Duration must be 8, 12, or 15")
+        raise HTTPException(400, f"Duration must be one of {', '.join(DURATION_TARGETS)}")
     notes = req.notes
     research: Optional[Dict[str, Any]] = None
     if req.research:
