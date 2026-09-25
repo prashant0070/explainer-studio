@@ -43,11 +43,12 @@
             <option value="science">Science &amp; tech story</option>
           </select>
         </label>
-        <label>Length
+          <label>Length
           <select id="duration">
             <option value="8">8 min</option>
             <option value="12" selected>12 min</option>
             <option value="15">15 min</option>
+            <option value="25">25 min</option>
           </select>
         </label>
       </div>
@@ -85,6 +86,7 @@
           </div>
           <div class="actions">
             <button id="render-btn" class="primary">Produce full video</button>
+            <button id="virality-btn" class="ghost">Will it go viral?</button>
             <button id="make-images" class="ghost">Generate 8 images</button>
             <button id="export" class="ghost">Export zip</button>
           </div>
@@ -93,6 +95,13 @@
         <div class="render-controls">
           <label>Voice
             <select id="voice"></select>
+          </label>
+          <label>Pace
+            <select id="pace">
+              <option value="normal" selected>Normal</option>
+              <option value="faster">Faster (+15%) — more engaging</option>
+              <option value="fastest">Fastest (+28%)</option>
+            </select>
           </label>
           <label>Image engine
             <select id="image-engine">
@@ -109,6 +118,8 @@
           <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
           <p class="meta" id="render-message"></p>
         </div>
+
+        <div id="virality-wrap" class="virality" hidden></div>
 
         <div id="video-wrap" hidden>
           <video id="player" controls preload="metadata"></video>

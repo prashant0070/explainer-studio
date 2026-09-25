@@ -8,6 +8,7 @@ DURATION_TARGETS = {
     "8": {"minutes": 8, "words": 1100, "scenes": 28},
     "12": {"minutes": 12, "words": 1650, "scenes": 40},
     "15": {"minutes": 15, "words": 2100, "scenes": 50},
+    "25": {"minutes": 25, "words": 3450, "scenes": 84},
 }
 
 IMAGE_STYLE = (

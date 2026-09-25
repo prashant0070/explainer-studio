@@ -159,6 +159,52 @@ pre {
 .qc-verdict.qc-fail { color: var(--danger); }
 .qc-review { color: var(--muted); max-width: 46em; line-height: 1.5; }
 
+.virality {
+  margin: 18px 0 8px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  max-width: 960px;
+}
+.vir-head { display: flex; align-items: center; gap: 20px; }
+.vir-gauge {
+  flex: none;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  border: 3px solid var(--accent);
+  background: #0d0c0a;
+}
+.vir-gauge .vir-num { font-size: 38px; line-height: 1; font-weight: 600; display: block; text-align: center; }
+.vir-gauge .vir-out { font-family: var(--mono); font-size: 11px; color: var(--muted); display: block; text-align: center; }
+.vir-verdict .vir-label { margin: 4px 0 6px; font-size: 22px; }
+.vir-high { color: #7fb069; border-color: #7fb069; }
+.vir-strong { color: #a9c74f; border-color: #a9c74f; }
+.vir-medium { color: var(--accent); border-color: var(--accent); }
+.vir-low { color: var(--danger); border-color: var(--danger); }
+.vir-factors { list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.vir-factor { border: 1px solid var(--line); padding: 10px 12px; background: var(--bg); }
+.vir-factor-head { display: flex; justify-content: space-between; align-items: baseline; }
+.vir-factor-name { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.vir-factor-score { font-family: var(--mono); font-size: 16px; }
+.vir-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+.vir-bar { height: 100%; background: var(--accent); }
+.vir-factor.vir-pass .vir-bar { background: #7fb069; }
+.vir-factor.vir-warn .vir-bar { background: var(--accent); }
+.vir-factor.vir-fail .vir-bar { background: var(--danger); }
+.vir-detail { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.vir-sub { margin: 20px 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--mono); color: var(--accent); }
+.vir-titles, .vir-tips { margin: 0; padding-left: 0; list-style: none; max-width: 46em; }
+.vir-titles li { padding: 4px 0; font-size: 15px; }
+.vir-titles .vir-title-score { display: inline-block; min-width: 2.4em; font-family: var(--mono); color: var(--muted); }
+.vir-title-best { color: var(--ink); }
+.vir-title-best .vir-title-score { color: #7fb069; }
+.vir-tips { padding-left: 18px; list-style: disc; }
+.vir-tips li { margin-bottom: 6px; line-height: 1.45; }
+.vir-review { color: var(--muted); max-width: 46em; line-height: 1.5; margin: 16px 0 0; }
+
 .intel-h { margin: 28px 0 12px; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; font-family: var(--mono); color: var(--accent); }
 .intel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .intel-card { border: 1px solid var(--line); background: var(--panel); padding: 14px 16px; }
