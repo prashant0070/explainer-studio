@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "explainer"
+version = "0.1.0"
+description = "Spec-driven pipeline for vertical (1080x1920) explainer Shorts: word-aligned VO, code-drawn motion graphics, -14 LUFS mix, phone-friendly exports"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "Pillow>=10.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+align = ["faster-whisper>=1.0", "av<16"]  # av 16+ breaks faster-whisper's decode
+studio = [
+    "fastapi>=0.116",
+    "uvicorn[standard]>=0.35",
+    "httpx>=0.28",
+    "pydantic>=2.11",
+    "pydantic-settings>=2.10",
+    "python-dotenv>=1.1",
+    "python-multipart>=0.0.20",
+]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+explainer = "explainer.cli:main"
+
+[tool.setuptools]
+packages = ["explainer"]
