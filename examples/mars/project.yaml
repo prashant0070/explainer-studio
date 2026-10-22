@@ -1,0 +1,299 @@
+# Port of the "Survive 100 Days on Mars" Short as an explainer project spec.
+# The four NASA stills are public domain but NOT bundled — see assets/README.md
+# for the exact images and download links, or build with --placeholders.
+title: "Survive 100 Days on Mars"
+slug: mars-100-days
+
+style:
+  bg: "#09090d"
+  accent: "#ec7634"      # Mars orange
+  accent2: "#d62228"     # series red
+  text: "#f5f5f5"
+  muted: "#96969f"
+  highlight: "#ffb02e"   # caption karaoke + kickers
+  font_dir: ../../fonts
+
+banner:
+  lines: ["WHAT IF YOU SURVIVED", "100 DAYS ON MARS?"]
+  pill: "PART 1"
+
+timeline:
+  labels: ["1", "3", "10", "30", "60", "100"]
+  beats: [day1, day3, day10, day30, day60, day100]
+
+output:
+  fps: 30
+  share: true
+
+audio:
+  sfx: true
+
+# spoken forms: used for the no-VO timing estimate and for VO word matching
+spoken:
+  "100": one hundred
+  "100.": one hundred
+  "95%": ninety five percent
+  "1%": one percent
+  "60": sixty
+  "60.": sixty
+  "125.": one twenty five
+  "0.64": zero point six four
+  "2018,": twenty eighteen
+  "38%.": thirty eight percent
+  "38%": thirty eight percent
+  "1.5%": one point five percent
+  "500": five hundred
+  "500.": five hundred
+  "1.": one
+  "3.": three
+  "10.": ten
+  "30.": thirty
+  "2:": two
+
+beats:
+  - id: hook
+    text: "Survive 100 days on Mars. Here's what it does to you."
+  - id: day1
+    text: "Day 1. The air is 95% carbon dioxide, at under 1% of Earth's pressure. The helmet never comes off."
+  - id: day3
+    text: "Day 3. Nightfall. Mars averages minus 60 Celsius. Polar winters hit minus 125."
+  - id: day10
+    text: "Day 10. Curiosity measured 0.64 millisieverts a day here. You've already taken over two years of Earth's natural radiation."
+  - id: day30
+    text: "Day 30. A dust storm. In 2018, one swallowed the planet, and NASA's Opportunity rover went dark forever."
+  - id: day60
+    text: "Day 60. Water: recycled. Food: must last up to five years. Gravity: 38%. In orbit, astronauts lose up to 1.5% of their bone density a month. Nobody knows if 38% stops it."
+  - id: day100
+    text: "Day 100. Over 60 millisieverts. You survived. But in NASA's plans, you stay about 500 days, until the planets line up for home."
+  - id: end
+    text: "Part 2: Day 500."
+
+shots:
+  - type: title
+    at: hook.0
+    transition: cut
+    title: "100"
+    subtitle: "DAYS ON MARS"
+    kicker: "HOW LONG UNTIL IT BREAKS YOU?"
+
+  - type: image
+    at: hook.5
+    transition: zoom
+    src: assets/nasa/PIA00407.jpg
+    label: "MARS"
+    sublabel: "HERE'S WHAT IT DOES TO YOU"
+    zoom: [1.0, 1.12]
+    focus: [0.5, 0.42]
+    credit: "IMAGE: NASA/JPL/USGS (VIKING) · PIA00407"
+
+  - type: card
+    at: day1.0
+    transition: whip
+    animation: rings
+    number: "1"
+    label: "THE AIR"
+
+  - type: counter
+    at: day1.2
+    transition: cut
+    from: 0
+    to: 95.1
+    format: "{:.1f}"
+    unit: "% CO2"
+    over: "THE MARTIAN AIR"
+    label: "CARBON DIOXIDE"
+    credit: "DATA: NASA GSFC MARS FACT SHEET"
+    punch:
+      - { at: day1.5, zoom: 1.16, focus: [0.5, 0.48] }
+
+  - type: bars
+    at: day1.8
+    transition: cut
+    heading: "AIR PRESSURE AT THE SURFACE"
+    items:
+      - { label: "EARTH", value: 1014, display: "1,014 mbar", color: blue }
+      - { label: "MARS", value: 6.4, display: "0.6%", color: accent }
+    credit: "DATA: NASA GSFC PLANETARY FACT SHEETS"
+    punch:
+      - { at: day1.10, zoom: 1.2, focus: [0.68, 0.55] }
+    slam:
+      at: day1.14
+      lines: ["HELMET ON.", "ALWAYS."]
+
+  - type: card
+    at: day3.0
+    transition: whip
+    animation: slide
+    number: "3"
+    label: "THE COLD"
+    tint: ice
+
+  - type: counter
+    at: day3.2
+    transition: cut
+    from: 20
+    to: -125
+    format: "{:.0f}"
+    unit: "°C"
+    over: "NIGHTFALL"
+    label: "AVERAGE -60°C"
+    sub: "POLAR WINTERS HIT -125°C (~ -195°F)"
+    credit: "DATA: NASA (MARS FACTS)"
+    punch:
+      - { at: day3.6, zoom: 1.14, focus: [0.5, 0.42] }
+      - { at: day3.12, zoom: 1.18, focus: [0.5, 0.46] }
+
+  - type: card
+    at: day10.0
+    transition: whip
+    animation: glitch
+    number: "10"
+    label: "THE RADIATION"
+
+  - type: counter
+    at: day10.2
+    transition: cut
+    rays: true
+    from: 0
+    to: 6.4
+    format: "{:.2f}"
+    unit: "mSv"
+    over: "DAYS 1-10"
+    label: "0.64 mSv PER DAY"
+    credit: "DATA: HASSLER ET AL., SCIENCE 2014 (CURIOSITY RAD)"
+    punch:
+      - { at: day10.4, zoom: 1.18, focus: [0.5, 0.42] }
+
+  - type: bars
+    at: day10.9
+    transition: zoom
+    heading: "YOUR DOSE VS A YEAR ON EARTH"
+    items:
+      - { label: "EARTH YEAR", value: 3.0, display: "3.0 mSv", color: blue }
+      - { label: "10 MARS DAYS", value: 6.4, display: "6.4 mSv", color: accent }
+    sub: "~ 2.1 YEARS OF NATURAL DOSE IN 10 DAYS"
+    credit: "DATA: UNSCEAR 2024 (3.0 mSv/YR); HASSLER ET AL. 2014"
+    punch:
+      - { at: day10.13, zoom: 1.15, focus: [0.5, 0.55] }
+
+  - type: card
+    at: day30.0
+    transition: whip
+    animation: wipe
+    number: "30"
+    label: "THE STORM"
+
+  - type: image
+    at: day30.2
+    transition: cut
+    src: assets/nasa/PIA22521.jpg
+    label: "THE SKY GOES DARK"
+    sublabel: "NASA SIMULATION OF OPPORTUNITY'S VIEW"
+    zoom: [1.0, 1.1]
+    focus: [0.5, 0.45]
+    credit: "NASA/JPL-CALTECH/TAMU SIMULATION · PIA22521"
+
+  - type: image
+    at: day30.7
+    transition: cut
+    src: assets/nasa/PIA22487.jpg
+    label: "JULY 2018 · PLANET-WIDE"
+    zoom: [1.02, 1.14]
+    focus: [0.5, 0.4]
+    credit: "NASA/JPL-CALTECH/MSSS · MRO MARCI · PIA22487"
+
+  - type: image
+    at: day30.12
+    transition: cut
+    src: assets/nasa/PIA22929.jpg
+    label: "OPPORTUNITY'S LAST IMAGE"
+    sublabel: "1,000+ COMMANDS. NO REPLY."
+    zoom: [1.0, 1.15]
+    focus: [0.5, 0.4]
+    credit: "NASA/JPL-CALTECH · PIA22929 (PARTIAL FRAME)"
+    punch:
+      - { at: day30.16, zoom: 1.2, focus: [0.5, 0.4] }
+
+  - type: card
+    at: day60.0
+    transition: whip
+    animation: bounce
+    number: "60"
+    label: "THE BODY"
+
+  - type: list
+    at: day60.2
+    transition: cut
+    heading: "SURVIVAL LEDGER"
+    items:
+      - { label: "WATER", value: "98% RECYCLED", color: blue }
+      - { label: "FOOD", value: "5-YEAR SHELF LIFE", color: accent }
+      - { label: "GRAVITY", value: "38% OF EARTH'S", color: highlight }
+    credit: "NASA ISS WATER RECOVERY 2023 · NASA HRP FOOD REPORT 2024"
+    punch:
+      - { at: day60.4, zoom: 1.12, focus: [0.5, 0.45] }
+
+  - type: gauge
+    at: day60.11
+    transition: cut
+    heading: "GRAVITY"
+    value: 38
+    max: 100
+    format: "{:.0f}"
+    unit: "%"
+    label: "OF EARTH'S PULL"
+    credit: "DATA: NASA GSFC FACT SHEET"
+
+  - type: stat
+    at: day60.13
+    transition: cut
+    heading: "IN ORBIT, ASTRONAUTS LOSE"
+    value: "-1.5%"
+    label: "BONE DENSITY / MONTH"
+    sub: "NOBODY KNOWS IF 38% GRAVITY STOPS IT"
+    color: accent2
+    credit: "DATA: NASA HUMAN RESEARCH PROGRAM"
+    punch:
+      - { at: day60.19, zoom: 1.15, focus: [0.5, 0.42] }
+      - { at: day60.26, zoom: 1.0, focus: [0.5, 0.45] }
+
+  - type: card
+    at: day100.0
+    transition: whip
+    animation: odometer
+    from: 60
+    number: "100"
+    label: "THE WAIT"
+
+  - type: counter
+    at: day100.2
+    transition: cut
+    rays: true
+    from: 0
+    to: 64
+    format: "{:.0f}"
+    unit: "mSv"
+    over: "DAY 100 TOTAL"
+    label: "~ 21 YEARS OF EARTH'S DOSE"
+    credit: "0.64 mSv/DAY x 100 DAYS · HASSLER 2014; UNSCEAR 2024"
+    slam:
+      at: day100.5
+      lines: ["YOU", "SURVIVED."]
+
+  - type: stat
+    at: day100.7
+    transition: cut
+    heading: "BUT IN NASA'S PLANS"
+    value: "DAY 500"
+    label: "THE RIDE HOME"
+    sub: "WAITING FOR THE PLANETS TO LINE UP"
+    credit: "NASA MARS DRA 5.0 · ~500-DAY SURFACE STAY"
+    punch:
+      - { at: day100.14, zoom: 1.15, focus: [0.5, 0.42] }
+
+  - type: end
+    at: end.0
+    transition: whip
+    pill: "PART 2"
+    title: "DAY 500"
+    sub: "WHAT'S LEFT OF YOU?"
