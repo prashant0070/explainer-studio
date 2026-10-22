@@ -1,7 +1,10 @@
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+*.egg-info/
 .env
+out/
 data/projects/*
 !data/projects/.gitkeep
 .DS_Store

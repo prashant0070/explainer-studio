@@ -1,3 +1,5 @@
+# Studio web app only. Prefer: pip install -e '.[studio]'
+# For the render pipeline CLI: pip install -e .  (+ '.[align]' for word alignment)
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 httpx==0.28.1
